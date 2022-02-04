@@ -245,6 +245,7 @@ async function getConnectedAndFundedSigners(fromWallet, numSigners, includeDrive
 
     let included = false;
     let fundedSigners = Array();
+    let fundedWalletAddresses = Array();
     for (let i = 0; i < areLiquidatorsFunded.length; i++) {
         let liquidator = areLiquidatorsFunded[i];
         let [liqAddr, numLiquidations] = Object.entries(liquidator)[0];
@@ -254,10 +255,12 @@ async function getConnectedAndFundedSigners(fromWallet, numSigners, includeDrive
         }
         if (numLiquidations > 0) {
             fundedSigners.push(signers[i]);
+            fundedWalletAddresses.push(liquidator);
             continue;
         }
         if (includeDriverManager && !included) {
             fundedSigners.unshift(signers[i]);
+            fundedWalletAddresses.unshift(liquidator);
         }
     }
 
@@ -271,6 +274,6 @@ async function getConnectedAndFundedSigners(fromWallet, numSigners, includeDrive
         notifier.sendMessage(msg);
         process.exit(1);
     }
-    console.log(`Funded signingManagers:`, fundedSigners);
+    console.log(`Funded liquidator wallets:`, fundedWalletAddresses);
     return fundedSigners;
 }
