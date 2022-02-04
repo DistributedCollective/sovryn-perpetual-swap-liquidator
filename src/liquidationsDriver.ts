@@ -246,6 +246,11 @@ async function getConnectedAndFundedSigners(fromWallet, numSigners, includeDrive
     let included = false;
     let fundedSigners = Array();
     let fundedWalletAddresses = Array();
+    areLiquidatorsFunded = areLiquidatorsFunded.sort((a, b) => {
+        let [liqAddrA, numLiquidationsA] = Object.entries(a)[0];
+        let [liqAddrB, numLiquidationsB] = Object.entries(b)[0];
+        return parseInt(numLiquidationsB as any) - parseInt(numLiquidationsA as any);
+    });
     for (let i = 0; i < areLiquidatorsFunded.length; i++) {
         let liquidator = areLiquidatorsFunded[i];
         let [liqAddr, numLiquidations] = Object.entries(liquidator)[0];
@@ -261,6 +266,7 @@ async function getConnectedAndFundedSigners(fromWallet, numSigners, includeDrive
         if (includeDriverManager && !included) {
             fundedSigners.unshift(signers[i]);
             fundedWalletAddresses.unshift(liquidator);
+            included = true;
         }
     }
 
