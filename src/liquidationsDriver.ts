@@ -1,9 +1,11 @@
 //if/when we'll need more than one script parameter, we can use a proper module to parse the CLI args, like minimist or yargs
 let configPath = process.argv?.[2] || "../.env";
 require("dotenv").config({ path: configPath });
+
 import TelegramNotifier from "./notifier/TelegramNotifier";
 import { getPerpetualIdsSerial, getTraderIdsSerial, getTradersStates, liquidateByBotV2, unlockTrader } from "./liquidations";
 import { walletUtils, perpQueries, perpUtils } from "@sovryn/perpetual-swap";
+const fetch = require('node-fetch');
 const { getSigningManagersConnectedToRandomNode, getNumTransactions } = walletUtils;
 const { queryTraderState, queryAMMState, queryPerpParameters } = perpQueries;
 const { getMarkPrice } = perpUtils;
@@ -94,6 +96,10 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
                 if (numBlocks % 50 === 0) {
                     console.log(`[${new Date()} (${timeEnd - timeStart} ms) block: ${blockNumber}] numBlocks ${numBlocks} active traders ${numTraders}`);
                 }
+                await sendHeartBeat('LIQ_BLOCK_PROCESSED', {
+                    blockNumber,
+                    duration: timeEnd - timeStart,
+                });
 
                 numBlocks++;
                 if (numBlocks >= maxBlocks) {
@@ -282,4 +288,23 @@ async function getConnectedAndFundedSigners(fromWallet, numSigners, includeDrive
     }
     console.log(`Funded liquidator wallets:`, fundedWalletAddresses);
     return fundedSigners;
+}
+
+async function sendHeartBeat(code, payload){
+    try {
+        let heartbeatUrl = process.env.HEARTBEAT_LISTENER_URL;
+        if(!heartbeatUrl){
+            console.warn('Env var HEARTBEAT_LISTENER_URL is not set, so it\'s impossible to send heartbeats');
+            return;
+        }
+        await fetch(heartbeatUrl, 'POST', {
+            body: JSON.stringify({
+                code,
+                payload,
+            }, null, 2)
+        });
+    } catch (error) {
+        console.warn(`Error sending heartbeat:`, error);
+    }
+
 }
