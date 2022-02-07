@@ -297,7 +297,8 @@ async function sendHeartBeat(code, payload){
             console.warn('Env var HEARTBEAT_LISTENER_URL is not set, so it\'s impossible to send heartbeats');
             return;
         }
-        await fetch(heartbeatUrl, 'POST', {
+        await fetch(heartbeatUrl, {
+            method: 'POST',
             body: JSON.stringify({
                 code,
                 payload,
