@@ -5,7 +5,7 @@ require("dotenv").config({ path: configPath });
 import TelegramNotifier from "./notifier/TelegramNotifier";
 import { getPerpetualIdsSerial, getTraderIdsSerial, getTradersStates, liquidateByBotV2, unlockTrader } from "./liquidations";
 import { walletUtils, perpQueries, perpUtils } from "@sovryn/perpetual-swap";
-const fetch = require('node-fetch');
+const fetch = require("node-fetch");
 const { getSigningManagersConnectedToRandomNode, getNumTransactions } = walletUtils;
 const { queryTraderState, queryAMMState, queryPerpParameters } = perpQueries;
 const { getMarkPrice } = perpUtils;
@@ -96,7 +96,7 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
                 if (numBlocks % 50 === 0) {
                     console.log(`[${new Date()} (${timeEnd - timeStart} ms) block: ${blockNumber}] numBlocks ${numBlocks} active traders ${numTraders}`);
                 }
-                await sendHeartBeat('LIQ_BLOCK_PROCESSED', {
+                await sendHeartBeat("LIQ_BLOCK_PROCESSED", {
                     blockNumber,
                     duration: timeEnd - timeStart,
                 });
@@ -290,22 +290,35 @@ async function getConnectedAndFundedSigners(fromWallet, numSigners, includeDrive
     return fundedSigners;
 }
 
-async function sendHeartBeat(code, payload){
+async function sendHeartBeat(code, payload) {
     try {
         let heartbeatUrl = process.env.HEARTBEAT_LISTENER_URL;
-        if(!heartbeatUrl){
-            console.warn('Env var HEARTBEAT_LISTENER_URL is not set, so it\'s impossible to send heartbeats');
+        if (!heartbeatUrl) {
+            console.warn("Env var HEARTBEAT_LISTENER_URL is not set, so it's impossible to send heartbeats");
             return;
         }
-        await fetch(heartbeatUrl, {
-            method: 'POST',
-            body: JSON.stringify({
-                code,
-                payload,
-            }, null, 2)
+        let res = await fetch(heartbeatUrl, {
+            method: "POST",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(
+                {
+                    heartbeatCode: code,
+                    payload,
+                },
+                null,
+                2
+            ),
         });
+        if(res.statusText.toLowerCase() !== 'created'){
+            let responseText = await res.text();
+            let msg = `Error sending heartBeats: ${res.statusText}; response text: ${responseText}`;
+            console.warn(msg);
+            notifier.sendMessage(msg);
+        }
     } catch (error) {
         console.warn(`Error sending heartbeat:`, error);
     }
-
 }
