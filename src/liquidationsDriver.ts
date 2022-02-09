@@ -10,7 +10,7 @@ const { getSigningManagersConnectedToRandomNode, getNumTransactions } = walletUt
 const { queryTraderState, queryAMMState, queryPerpParameters } = perpQueries;
 const { getMarkPrice } = perpUtils;
 
-const { MANAGER_ADDRESS, NODE_URL, OWNER_ADDRESS, MAX_BLOCKS_BEFORE_RECONNECT, TELEGRAM_BOT_SECRET, TELEGRAM_CHANNEL_ID } = process.env;
+const { MANAGER_ADDRESS, NODE_URLS, OWNER_ADDRESS, MAX_BLOCKS_BEFORE_RECONNECT, TELEGRAM_BOT_SECRET, TELEGRAM_CHANNEL_ID } = process.env;
 
 const fundingLevelAlerts = {
     green: 10,
@@ -223,7 +223,7 @@ function getTelegramNotifier(telegramSecret, telegramChannel) {
 }
 
 async function getConnectedAndFundedSigners(fromWallet, numSigners, includeDriverManager = true) {
-    let extraNodes = NODE_URL ? [NODE_URL] : [];
+    let bscNodeURLs = JSON.parse(NODE_URLS || "[]");
     let signers = Array();
     let areLiquidatorsFunded = Array();
     let numRetries = 0;
@@ -231,7 +231,7 @@ async function getConnectedAndFundedSigners(fromWallet, numSigners, includeDrive
     while (true) {
         try {
             //get an array of signingWallets
-            signers = getSigningManagersConnectedToRandomNode(MANAGER_ADDRESS, MNEMONIC, extraNodes, fromWallet, numSigners) || [];
+            signers = getSigningManagersConnectedToRandomNode(MANAGER_ADDRESS, MNEMONIC, bscNodeURLs, fromWallet, numSigners) || [];
 
             //get the number of liquidations each can make [{[liquidatorAddress]: numLiquidations}]
             //this also checks whether the signingManagers are connected and the node responds properly
