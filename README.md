@@ -14,7 +14,7 @@ $ npm install -g ts-node
 
 Edit the .env file:
 
-Make sure that `OWNER_ADDRESS` points to **one of your wallet addresses**, because that's where the commissions earned by liquidating traders will end into!
+Make sure that `OWNER_ADDRESS` is **one of your wallet addresses**, because that's where the commissions earned by liquidating traders will end into!
 
 Make sure the `MANAGER_ADDRESS` and `TOKEN_ADDRESS` point to the AMM that's currently in use and the rBTC ERC20 contract. The ones in the .env-sample should point to the correct ones.
 
