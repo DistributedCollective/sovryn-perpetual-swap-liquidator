@@ -20,6 +20,8 @@ Make sure the `MANAGER_ADDRESS` and `TOKEN_ADDRESS` point to the AMM that's curr
 
 Configure `TELEGRAM_BOT_SECRET` and `TELEGRAM_CHANNEL_ID` with the correct credentials of a telegram bot ([here's how you can create your own](https://core.telegram.org/bots#3-how-do-i-create-a-bot)) so that the liquidator can send you notifications* if something goes wrong.
 
+The `HEARTBEAT_LISTENER_URL` is a heartbeat listening API endpoint. [TheNurse](https://github.com/DistributedCollective/TheNurse) is a project that's being built for this. If there's a running instance of TheNurse at `https://thenurse.example.com`, then `HEARTBEAT_LISTENER_URL` would be set to `https://thenurse.example.com/api/heartbeats`
+
 ## Run it.
 
 The liquidator bot needs access to a mnemonic that represents a bip39 seed phrase, so it can create multiple wallet instances that can liquidate multiple traders concurrently.
@@ -31,6 +33,12 @@ The liquidator reads the mnemonic from the `MNEMONIC` environment variable. Whet
 Once the `MNEMONIC` env variable is configured, run:
 ```
 $ ts-node src/liquidationsDriver.ts .env
+```
+
+Or, to start it with pm2:
+
+```
+$ pm2 start ts-node --name liquidator --time --max-memory-restart 1000M --log ./liquidation-logs.out -- ./src/liquidationsDriver.ts .env
 ```
 
 
