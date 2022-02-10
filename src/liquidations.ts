@@ -75,7 +75,7 @@ export async function liquidateByBotV2(
     signingManagers,
     owner,
     perpId: string,
-    oraclePrice,
+    markPrice,
     tradersStates: TradersStates,
     perpParams: PerpParameters,
     ammData: AMMState
@@ -83,7 +83,7 @@ export async function liquidateByBotV2(
     let unsafeTraderIds = {};
 
     for (const traderId in tradersStates) {
-        if (tradersStates[traderId].marginAccountPositionBC != 0 && !isTraderSafe(tradersStates[traderId], oraclePrice, perpParams, ammData)) {
+        if (tradersStates[traderId].marginAccountPositionBC != 0 && !isTraderSafe(tradersStates[traderId], markPrice, perpParams, ammData)) {
             unsafeTraderIds[traderId] = false;
         }
     }
@@ -94,10 +94,10 @@ export async function liquidateByBotV2(
     return liquidations;
 }
 
-function isTraderSafe(traderState, oraclePrice, perpParams, ammData) {
+function isTraderSafe(traderState, markPrice, perpParams, ammData) {
     let traderLiquidationPrice = calculateApproxLiquidationPrice(traderState, ammData, perpParams, 0, 0);
 
-    return traderState.marginAccountPositionBC > 0 ? oraclePrice >= traderLiquidationPrice : oraclePrice <= traderLiquidationPrice;
+    return traderState.marginAccountPositionBC > 0 ? markPrice >= traderLiquidationPrice : markPrice <= traderLiquidationPrice;
 }
 
 async function getAllPerpetualIds(signingManagers): Promise<any[] | undefined> {

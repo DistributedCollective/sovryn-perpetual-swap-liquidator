@@ -76,13 +76,13 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
                     numTraders += Object.keys(tradersPositions[perpId]).length || 0;
 
                     ammsData[perpId] = await queryAMMState(driverManager, perpId as unknown as number);
-                    let oraclePrice = getMarkPrice(ammsData[perpId]);
+                    let markPrice = getMarkPrice(ammsData[perpId]);
 
                     const liquidationResult = await liquidateByBotV2(
                         signingManagers,
                         OWNER_ADDRESS,
                         perpId,
-                        oraclePrice,
+                        markPrice,
                         tradersPositions[perpId],
                         perpsParams[perpId],
                         ammsData[perpId]
