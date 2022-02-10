@@ -107,7 +107,7 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
                 }
             } catch (e) {
                 console.log(`Error in block processing callback:`, e);
-                notifier.sendMessage(`Error in block processing callback ${(e as Error).message}`);
+                await notifier.sendMessage(`Error in block processing callback ${(e as Error).message}`);
                 return reject(e);
             }
         });
@@ -120,7 +120,7 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
                 await refreshPerpInfo(driverManager, perpId);
             } catch (error) {
                 console.log(`Error in UpdateMarkPrice callback handler`, error);
-                notifier.sendMessage(`Error in UpdateMarkPrice callback handler ${(error as any).message}`);
+                await notifier.sendMessage(`Error in UpdateMarkPrice callback handler ${(error as any).message}`);
             }
         });
 
@@ -134,7 +134,7 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
                 }
             } catch (e) {
                 console.log(`Error in RealizedPnLRealizedPnL event handler perpId ${perpId}, traderId ${traderId}:`, e);
-                notifier.sendMessage(`Error in RealizedPnLRealizedPnL event handler perpId ${perpId}, traderId ${traderId}: ${(e as any).message}`);
+                await notifier.sendMessage(`Error in RealizedPnLRealizedPnL event handler perpId ${perpId}, traderId ${traderId}: ${(e as any).message}`);
             }
         });
     });
@@ -152,7 +152,7 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
                 console.log(`Ran for ${MAX_BLOCKS_BEFORE_RECONNECT}`);
             } catch (error) {
                 console.log(`Error in while(true):`, error);
-                // notifier.sendMessage(`Error in while(true): ${(error as any).message}`);
+                // await notifier.sendMessage(`Error in while(true): ${(error as any).message}`);
             }
 
             //remove event listeners and reconnect
@@ -163,7 +163,7 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
         }
     } catch (error) {
         console.log(`General error while liquidating users, exiting process`, error);
-        notifier.sendMessage(`General error while liquidating users: ${(error as any).message}. Exiting.`);
+        await notifier.sendMessage(`General error while liquidating users: ${(error as any).message}. Exiting.`);
         process.exit(1);
     }
 })();
@@ -243,7 +243,7 @@ async function getConnectedAndFundedSigners(fromWallet, numSigners, includeDrive
             if (numRetries >= maxRetries) {
                 let msg = `[${new Date()}] FATAL: could not connect to a node after ${maxRetries} attempts. Exiting!`;
                 console.error(msg);
-                notifier.sendMessage(msg);
+                await notifier.sendMessage(msg);
                 process.exit(1);
             }
         }
@@ -283,7 +283,7 @@ async function getConnectedAndFundedSigners(fromWallet, numSigners, includeDrive
             2
         )}`;
         console.error(msg);
-        notifier.sendMessage(msg);
+        await notifier.sendMessage(msg);
         process.exit(1);
     }
     console.log(`Funded liquidator wallets:`, fundedWalletAddresses);
@@ -316,7 +316,7 @@ async function sendHeartBeat(code, payload) {
             let responseText = await res.text();
             let msg = `Error sending heartBeats: ${res.statusText}; response text: ${responseText}`;
             console.warn(msg);
-            notifier.sendMessage(msg);
+            await notifier.sendMessage(msg);
         }
     } catch (error) {
         console.warn(`Error sending heartbeat:`, error);
