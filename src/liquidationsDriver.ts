@@ -5,6 +5,7 @@ require("dotenv").config({ path: configPath });
 import TelegramNotifier from "./notifier/TelegramNotifier";
 import { getPerpetualIdsSerial, getTraderIdsSerial, getTradersStates, liquidateByBotV2, unlockTrader } from "./liquidations";
 import { walletUtils, perpQueries, perpUtils } from "@sovryn/perpetual-swap";
+import { v4 as uuidv4 } from "uuid";
 const fetch = require("node-fetch");
 const { getSigningManagersConnectedToRandomNode, getNumTransactions } = walletUtils;
 const { queryTraderState, queryAMMState, queryPerpParameters } = perpQueries;
@@ -23,6 +24,9 @@ if (!MNEMONIC) {
     console.log(`ERROR: Mnemonic is not present.`);
     process.exit(1);
 }
+
+const runId = uuidv4();
+console.log(`runId: ${runId}`);
 
 /**
  * {
@@ -98,6 +102,7 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
                 }
                 await sendHeartBeat("LIQ_BLOCK_PROCESSED", {
                     blockNumber,
+                    runId,
                     duration: timeEnd - timeStart,
                 });
 
@@ -145,6 +150,12 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
         let [driverManager, ...signingManagers] = await getConnectedAndFundedSigners(0, 11);
 
         tradersPositions = await initializeLiquidator(signingManagers);
+
+        if(process.env.HEARTBEAT_SHOULD_RESTART_URL){
+            let intervalId = setInterval( () => shouldRestart(runId, 'LIQ_BLOCK_PROCESSED'), 5_000);
+        } else {
+            console.warn("Env var HEARTBEAT_SHOULD_RESTART_URL is not set, so if the nodes are pausing the connection, can not restart automatically.");
+        }
 
         while (true) {
             try {
@@ -228,6 +239,10 @@ async function getConnectedAndFundedSigners(fromWallet, numSigners, includeDrive
     let areLiquidatorsFunded = Array();
     let numRetries = 0;
     let maxRetries = 100;
+    let included = false;
+    let fundedSigners = Array();
+    let fundedWalletAddresses = Array();
+    let timeStart = new Date().getTime();
     while (true) {
         try {
             //get an array of signingWallets
@@ -236,6 +251,38 @@ async function getConnectedAndFundedSigners(fromWallet, numSigners, includeDrive
             //get the number of liquidations each can make [{[liquidatorAddress]: numLiquidations}]
             //this also checks whether the signingManagers are connected and the node responds properly
             areLiquidatorsFunded = await checkFundingHealth(signers);
+            areLiquidatorsFunded = areLiquidatorsFunded.sort((a, b) => {
+                let [liqAddrA, numLiquidationsA] = Object.entries(a)[0];
+                let [liqAddrB, numLiquidationsB] = Object.entries(b)[0];
+                return parseInt(numLiquidationsB as any) - parseInt(numLiquidationsA as any);
+            });
+            for (let i = 0; i < areLiquidatorsFunded.length; i++) {
+                let liquidator = areLiquidatorsFunded[i];
+                let [liqAddr, numLiquidations] = Object.entries(liquidator)[0];
+                if (typeof numLiquidations !== "number") {
+                    console.log(`Unable to instantiate signer with address ${liqAddr}, i=${i}, ${(numLiquidations as any).toString()}`);
+                    continue;
+                }
+                if (numLiquidations > 0) {
+                    fundedSigners.push(signers[i]);
+                    fundedWalletAddresses.push(liquidator);
+                    continue;
+                }
+                if (includeDriverManager && !included) {
+                    fundedSigners.unshift(signers[i]);
+                    fundedWalletAddresses.unshift(liquidator);
+                    included = true;
+                }
+            }
+            if (fundedSigners.length === 0 || (includeDriverManager && fundedSigners.length === 1)) {
+                let msg = `[${new Date()}] WARN: there are no funded liquidators. Can not liquidate because there are no tx fee sufficient funds in the selected wallets. Retrying! ${JSON.stringify(
+                    areLiquidatorsFunded,
+                    null,
+                    2
+                )}`;
+                console.warn(msg);
+                throw new Error(msg);
+            }
             break;
         } catch (error) {
             console.log;
@@ -248,45 +295,9 @@ async function getConnectedAndFundedSigners(fromWallet, numSigners, includeDrive
             }
         }
     }
-
-    let included = false;
-    let fundedSigners = Array();
-    let fundedWalletAddresses = Array();
-    areLiquidatorsFunded = areLiquidatorsFunded.sort((a, b) => {
-        let [liqAddrA, numLiquidationsA] = Object.entries(a)[0];
-        let [liqAddrB, numLiquidationsB] = Object.entries(b)[0];
-        return parseInt(numLiquidationsB as any) - parseInt(numLiquidationsA as any);
-    });
-    for (let i = 0; i < areLiquidatorsFunded.length; i++) {
-        let liquidator = areLiquidatorsFunded[i];
-        let [liqAddr, numLiquidations] = Object.entries(liquidator)[0];
-        if (typeof numLiquidations !== "number") {
-            console.log(`Unable to instantiate signer with address ${liqAddr}, i=${i}, ${(numLiquidations as any).toString()}`);
-            continue;
-        }
-        if (numLiquidations > 0) {
-            fundedSigners.push(signers[i]);
-            fundedWalletAddresses.push(liquidator);
-            continue;
-        }
-        if (includeDriverManager && !included) {
-            fundedSigners.unshift(signers[i]);
-            fundedWalletAddresses.unshift(liquidator);
-            included = true;
-        }
-    }
-
-    if (fundedSigners.length === 0 || (includeDriverManager && fundedSigners.length === 1)) {
-        let msg = `[${new Date()}] FATAL: there are no funded liquidators. Can not liquidate because there are no tx fee sufficient funds in the selected wallets. Exiting! ${JSON.stringify(
-            areLiquidatorsFunded,
-            null,
-            2
-        )}`;
-        console.error(msg);
-        await notifier.sendMessage(msg);
-        process.exit(1);
-    }
-    console.log(`Funded liquidator wallets:`, fundedWalletAddresses);
+    
+    let timeEnd = new Date().getTime();
+    console.log(`(${timeEnd - timeStart} ms) Funded liquidator wallets after ${numRetries} connection attempts:`, fundedWalletAddresses);
     return fundedSigners;
 }
 
@@ -297,22 +308,25 @@ async function sendHeartBeat(code, payload) {
             console.warn("Env var HEARTBEAT_LISTENER_URL is not set, so it's impossible to send heartbeats");
             return;
         }
+        let runnerId = payload.runId;
+        delete payload.runId;
         let res = await fetch(heartbeatUrl, {
             method: "POST",
             headers: {
-                Accept: "application/json",
+                "Accept": "application/json",
                 "Content-Type": "application/json",
             },
             body: JSON.stringify(
                 {
                     heartbeatCode: code,
                     payload,
+                    runnerUuid: runnerId,
                 },
                 null,
                 2
             ),
         });
-        if(res.statusText.toLowerCase() !== 'created'){
+        if (res.statusText.toLowerCase() !== "created") {
             let responseText = await res.text();
             let msg = `Error sending heartBeats: ${res.statusText}; response text: ${responseText}`;
             console.warn(msg);
@@ -320,5 +334,38 @@ async function sendHeartBeat(code, payload) {
         }
     } catch (error) {
         console.warn(`Error sending heartbeat:`, error);
+    }
+}
+
+async function shouldRestart(runId, heartbeatCode){
+    try {
+        let heartbeatUrl = process.env.HEARTBEAT_SHOULD_RESTART_URL;
+        if (!heartbeatUrl) {
+            console.warn("Env var HEARTBEAT_SHOULD_RESTART_URL is not set, so if the nodes are pausing the connection, can not restart automatically.");
+            return;
+        }
+        
+        let res = await fetch(heartbeatUrl + `/${runId}/${heartbeatCode}`, {
+            method: "GET",
+            headers: {
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+            },            
+        });
+        if (res.statusText.toLowerCase() !== "ok") {
+            let responseText = await res.text();
+            let msg = `Error when shouldRestart: ${res.statusText}; response text: ${responseText}`;
+            console.warn(msg);
+            await notifier.sendMessage(msg);
+            return;
+        }
+
+        let restartRes = await res.json();
+        if(restartRes?.shouldRestart){
+            console.warn(`Restarting ${runId}. Time since last heartbeat: ${res?.timeSinceLastHeartbeat}`);
+            process.exit(1);
+        }
+    } catch (error) {
+        console.warn(`Error when shouldRestart:`, error);
     }
 }
