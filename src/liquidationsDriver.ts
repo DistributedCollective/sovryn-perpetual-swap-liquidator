@@ -51,12 +51,8 @@ let ammsData = {};
  */
 let perpsParams = {};
 
-/**
- * {
- *      [perpId]: Instance of a mini oracle factory. An instance which can only call getSpotPrice() method
- * }
- */
 let notifier = getTelegramNotifier(TELEGRAM_BOT_SECRET, TELEGRAM_CHANNEL_ID);
+let blockProcessingErrors = 0;
 /**
  * Run the liquidation script for a period of maxBlocks
  * @param signingManager a signing manager contract instance
@@ -105,14 +101,17 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
                     runId,
                     duration: timeEnd - timeStart,
                 });
-
+                blockProcessingErrors = 0;
                 numBlocks++;
                 if (numBlocks >= maxBlocks) {
                     return resolve();
                 }
             } catch (e) {
                 console.log(`Error in block processing callback:`, e);
-                await notifier.sendMessage(`Error in block processing callback ${(e as Error).message}`);
+                blockProcessingErrors++;
+                if(blockProcessingErrors >= 5){
+                    await notifier.sendMessage(`Error in block processing callback ${(e as Error).message}`);
+                }
                 return reject(e);
             }
         });
