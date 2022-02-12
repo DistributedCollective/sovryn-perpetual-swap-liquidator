@@ -237,7 +237,7 @@ async function getConnectedAndFundedSigners(fromWallet, numSigners, includeDrive
     let signers = Array();
     let areLiquidatorsFunded = Array();
     let numRetries = 0;
-    let maxRetries = 100;
+    let maxRetries = 10;
     let included = false;
     let fundedSigners = Array();
     let fundedWalletAddresses = Array();
