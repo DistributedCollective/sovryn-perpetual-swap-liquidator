@@ -15,54 +15,6 @@ export type TradersStates = {
 /**
  *
  * @param signingManagers an array of Perpetual Manager contract instances, with connected and funded wallets
- * @param owner
- * @param perpId the perpetual in which to liquidate unsafe traders
- * @param traders an array with all the traders in the perpetual
- * @returns
- */
-// export async function liquidateByBot(signingManagers, owner, perpId: string, traders: string[]) {
-//     try {
-//         let batchSize = signingManagers.length;
-//         let results = Object();
-
-//         let safeTradersPromises = Array();
-//         let safeTradersSettled = Array();
-//         // Liquidate all unsafe traders in perpetual
-//         let safeTraders: SafeTraders = {};
-
-//         let i = 0;
-//         for (const traderId of traders) {
-//             let signingManager = signingManagers[i % signingManagers.length];
-//             safeTradersPromises.push(
-//                 signingManager.isTraderMaintenanceMarginSafe(perpId, traderId).then((isSafe) => (safeTraders[traderId] = { safe: isSafe }))
-//             );
-//             if (safeTradersPromises.length === batchSize) {
-//                 safeTradersSettled.concat(await Promise.all(safeTradersPromises));
-//                 safeTradersPromises = [];
-//                 let liquidations = await liquidateUnsafeTraders(signingManagers, safeTraders, owner, perpId);
-//                 results = { ...results, ...liquidations };
-//                 safeTraders = {};
-//             }
-//             i++;
-//         }
-
-//         //there might be a last, not full batch we have to clear
-//         if (safeTradersPromises.length) {
-//             safeTradersSettled.concat(await Promise.all(safeTradersPromises));
-//             let liquidations = await liquidateUnsafeTraders(signingManagers, safeTraders, owner);
-//             results = { ...results, ...liquidations };
-//         }
-
-//         // console.log(`Number of traders:  ${Object.keys(safeTraders).length}. Unsafe ones: ${Object.values(safeTraders).filter( (traderInfo: TraderInfo) => !(traderInfo?.safe) ).length}`)
-//         return results;
-//     } catch (error) {
-//         console.log(`Error: `, error);
-//     }
-// }
-
-/**
- *
- * @param signingManagers an array of Perpetual Manager contract instances, with connected and funded wallets
  * @param owner the wallet wich collects the liquidation fees
  * @param perpId the perpetual in which to liquidate unsafe traders
  * @param traders an array with all the traders in the perpetual
