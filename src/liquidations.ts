@@ -121,12 +121,13 @@ export async function getPerpTraderIds(manager, perpId) {
     let timeStart = new Date().getTime();
     let chunkSize = 30;
     let numTraders = await manager.countActivePerpAccounts(perpId);
+    numTraders = parseInt(numTraders.toString());
     let tradersChunkPromises = Array();
     let from = 0;
     let to = chunkSize - 1;
     while (from < numTraders) {
         tradersChunkPromises.push(
-            manager.getActivePerpAccountsByChunks(perpId, from, to).catch((e) => {
+            manager.getActivePerpAccountsByChunks(perpId, from, to + 1).catch((e) => {
                 console.log(`Error when getActivePerpAccountsByChunks. perpId: ${perpId}, from ${from}, to ${to}`, e);
                 throw e;
             })
