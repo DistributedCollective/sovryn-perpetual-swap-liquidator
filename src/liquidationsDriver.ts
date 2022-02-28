@@ -284,7 +284,7 @@ async function getConnectedAndFundedSigners(fromWallet, numSigners, includeDrive
             }
             break;
         } catch (error) {
-            console.log;
+            console.log(error);
             numRetries++;
             if (numRetries >= maxRetries) {
                 let msg = `[${new Date()}] FATAL: could not connect to a node after ${maxRetries} attempts. Exiting!`;
