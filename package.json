@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/DistributedCollective/sovryn-perpetual-swap-liquidator#readme",
   "dependencies": {
-    "@sovryn/perpetual-swap": "^1.4.0",
+    "@sovryn/perpetual-swap": "^3.0.0",
     "dotenv": "^15.0.1",
     "node-fetch": "^2.6.7",
     "telegraf": "^4.6.0",

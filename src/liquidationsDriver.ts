@@ -4,7 +4,8 @@ require("dotenv").config({ path: configPath });
 
 import TelegramNotifier from "./notifier/TelegramNotifier";
 import { getPerpetualIdsSerial, getTraderIdsSerial, getTradersStates, liquidateByBotV2, unlockTrader } from "./liquidations";
-import { walletUtils, perpQueries, perpUtils } from "@sovryn/perpetual-swap";
+import { perpQueries, perpUtils } from "@sovryn/perpetual-swap";
+import * as walletUtils from '@sovryn/perpetual-swap/dist/scripts/utils/walletUtils';
 import { v4 as uuidv4 } from "uuid";
 const fetch = require("node-fetch");
 const { getSigningManagersConnectedToRandomNode, getNumTransactions } = walletUtils;
