@@ -102,19 +102,11 @@ export async function getPerpetualIdsSerial(manager): Promise<any[] | undefined>
 /**
  *
  * @param manager the perpetual manager contract instance
- * @param perpetualIds an array of all the perpetual ids
+ * @param perpetualId the perpId
  * @returns {
- *      [perpId]: [traderAddr1, traderAddr1, ....]
+ *      [traderAddr1, traderAddr1, ....]
  * }
  */
-export async function getTraderIdsSerial(manager, perpetualIds: number[]) {
-    let traderIds = Object();
-    // Get trader IDs for all traders in all pools
-    for (const perpId of perpetualIds || []) {
-        traderIds[perpId] = await getPerpTraderIds(manager, perpId);
-    }
-    return traderIds;
-}
 
 export async function getPerpTraderIds(manager, perpId) {
     let allTraders = await manager.getActivePerpAccounts(perpId);

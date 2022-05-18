@@ -38,7 +38,7 @@ $ ts-node src/liquidationsDriver.ts .env
 Or, to start it with pm2:
 
 ```
-$ pm2 start ts-node --name liquidator --time --max-memory-restart 1000M --log ./liquidation-logs.out -- ./src/liquidationsDriver.ts .env
+$ pm2 start liquidator-ecosystem.config.js
 ```
 
 

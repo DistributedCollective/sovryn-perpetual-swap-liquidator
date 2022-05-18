@@ -1,18 +1,24 @@
 //if/when we'll need more than one script parameter, we can use a proper module to parse the CLI args, like minimist or yargs
-let configPath = process.argv?.[2] || "../.env";
+const configFileName = process.argv?.[2] || '.env';
+const path = require('path');
+let configPath = path.resolve(__dirname, '../', configFileName);
 require("dotenv").config({ path: configPath });
 
 import TelegramNotifier from "./notifier/TelegramNotifier";
-import { getPerpetualIdsSerial, getTraderIdsSerial, getTradersStates, liquidateByBotV2, unlockTrader } from "./liquidations";
-import { perpQueries, perpUtils } from "@sovryn/perpetual-swap";
-import * as walletUtils from '@sovryn/perpetual-swap/dist/scripts/utils/walletUtils';
+import { getPerpTraderIds, getTradersStates, liquidateByBotV2, unlockTrader } from "./liquidations";
+import { AMMState, PerpParameters, perpQueries, perpUtils } from "@sovryn/perpetual-swap";
+import * as walletUtils from "@sovryn/perpetual-swap/dist/scripts/utils/walletUtils";
 import { v4 as uuidv4 } from "uuid";
 const fetch = require("node-fetch");
 const { getSigningManagersConnectedToRandomNode, getNumTransactions } = walletUtils;
 const { queryTraderState, queryAMMState, queryPerpParameters } = perpQueries;
 const { getMarkPrice } = perpUtils;
 
+//configured in the .env file
 const { MANAGER_ADDRESS, NODE_URLS, OWNER_ADDRESS, MAX_BLOCKS_BEFORE_RECONNECT, TELEGRAM_BOT_SECRET, TELEGRAM_CHANNEL_ID } = process.env;
+
+//configured in the liquidator-ecosystem.config.js
+const { PERP_ID, PERP_NAME, IDX_ADDR_START, NUM_ADDRESSES, } = process.env;
 
 const fundingLevelAlerts = {
     green: 10,
@@ -31,26 +37,14 @@ console.log(`runId: ${runId}`);
 
 /**
  * {
- *      [perpId]: {
  *          [traderId]: traderState
- *      }
  * }
  */
 let tradersPositions = {};
 
-/**
- * {
- *      [perpId]: AMMState
- * }
- */
-let ammsData = {};
+let ammState: AMMState | null;
 
-/**
- * {
- *      [perpId]: PerpParams
- * }
- */
-let perpsParams = {};
+let perpsParams: PerpParameters | null;
 
 let notifier = getTelegramNotifier(TELEGRAM_BOT_SECRET, TELEGRAM_CHANNEL_ID);
 let blockProcessingErrors = 0;
@@ -73,31 +67,33 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
             try {
                 let timeStart = new Date().getTime();
                 let numTraders = 0;
-                for (const perpId in tradersPositions) {
-                    numTraders += Object.keys(tradersPositions[perpId]).length || 0;
+                numTraders += Object.keys(tradersPositions).length || 0;
 
-                    ammsData[perpId] = await queryAMMState(driverManager, perpId as unknown as number);
-                    let markPrice = getMarkPrice(ammsData[perpId]);
+                ammState = await queryAMMState(driverManager, PERP_ID as unknown as number);
+                let markPrice = getMarkPrice(ammState);
 
+                if (perpsParams !== null) {
                     const liquidationResult = await liquidateByBotV2(
                         signingManagers,
                         OWNER_ADDRESS,
-                        perpId,
+                        PERP_ID as any,
                         markPrice,
-                        tradersPositions[perpId],
-                        perpsParams[perpId],
-                        ammsData[perpId]
+                        tradersPositions,
+                        perpsParams,
+                        ammState
                     );
                     if (Object.keys(liquidationResult || {}).length) {
-                        console.log(`Liquidations in perpetual ${perpId}: `, JSON.stringify(liquidationResult, null, 2));
-                        continue;
+                        console.log(`Liquidations in perpetual ${PERP_ID}: `, JSON.stringify(liquidationResult, null, 2));
                     }
+                } else {
+                    console.warn(`perpParams is null`);
                 }
+
                 let timeEnd = new Date().getTime();
                 if (numBlocks % 50 === 0) {
                     console.log(`[${new Date()} (${timeEnd - timeStart} ms) block: ${blockNumber}] numBlocks ${numBlocks} active traders ${numTraders}`);
                 }
-                await sendHeartBeat("LIQ_BLOCK_PROCESSED", {
+                await sendHeartBeat(`LIQ_${PERP_NAME || 'undefined'}_BLOCK_PROCESSED`, {
                     blockNumber,
                     runId,
                     duration: timeEnd - timeStart,
@@ -110,7 +106,7 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
             } catch (e) {
                 console.log(`Error in block processing callback:`, e);
                 blockProcessingErrors++;
-                if(blockProcessingErrors >= 5){
+                if (blockProcessingErrors >= 5) {
                     await notifier.sendMessage(`Error in block processing callback ${(e as Error).message}`);
                 }
                 return reject(e);
@@ -133,9 +129,9 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
             try {
                 let newTraderState = await queryTraderState(driverManager, perpId, traderId);
                 if (newTraderState.marginAccountPositionBC != 0) {
-                    tradersPositions[perpId][traderId] = newTraderState;
+                    tradersPositions[traderId] = newTraderState;
                 } else {
-                    delete tradersPositions[perpId][traderId];
+                    delete tradersPositions[traderId];
                 }
             } catch (e) {
                 console.log(`Error in RealizedPnLRealizedPnL event handler perpId ${perpId}, traderId ${traderId}:`, e);
@@ -147,12 +143,12 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
 
 (async function main() {
     try {
-        let [driverManager, ...signingManagers] = await getConnectedAndFundedSigners(0, 11);
+        let [driverManager, ...signingManagers] = await getConnectedAndFundedSigners(IDX_ADDR_START, NUM_ADDRESSES);
 
         tradersPositions = await initializeLiquidator(signingManagers);
 
-        if(process.env.HEARTBEAT_SHOULD_RESTART_URL){
-            let intervalId = setInterval( () => shouldRestart(runId, 'LIQ_BLOCK_PROCESSED'), 5_000);
+        if (process.env.HEARTBEAT_SHOULD_RESTART_URL) {
+            let intervalId = setInterval(() => shouldRestart(runId, "LIQ_BLOCK_PROCESSED"), 5_000);
         } else {
             console.warn("Env var HEARTBEAT_SHOULD_RESTART_URL is not set, so if the nodes are pausing the connection, can not restart automatically.");
         }
@@ -170,7 +166,7 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
             driverManager.provider.removeAllListeners();
             driverManager.removeAllListeners();
 
-            [driverManager, ...signingManagers] = await getConnectedAndFundedSigners(0, 11);
+            [driverManager, ...signingManagers] = await getConnectedAndFundedSigners(IDX_ADDR_START, NUM_ADDRESSES);
         }
     } catch (error) {
         console.log(`General error while liquidating users, exiting process`, error);
@@ -192,26 +188,24 @@ async function checkFundingHealth(accounts) {
 
 async function initializeLiquidator(signingManagers) {
     let driverManager = signingManagers[0];
-    const perpetualIds = (await getPerpetualIdsSerial(driverManager)) || [];
 
     let positions = {};
-    let traderIds = await getTraderIdsSerial(driverManager, perpetualIds || []);
+    let traderIds = await getPerpTraderIds(driverManager, PERP_ID);
     let numTraders = 0;
-    for (const perpId of Object.keys(traderIds)) {
-        [positions[perpId]] = await Promise.all([getTradersStates(signingManagers, perpId, traderIds[perpId]), refreshPerpInfo(driverManager, perpId)]);
 
-        console.log(perpsParams[perpId].oracleS2Addr);
-        numTraders += (traderIds[perpId] || []).length;
-        for (const traderId of traderIds[perpId]) {
-            unlockTrader(traderId, true);
-        }
+    [positions] = await Promise.all([getTradersStates(signingManagers, PERP_ID, traderIds), refreshPerpInfo(driverManager, PERP_ID)]);
+
+    numTraders += (traderIds || []).length;
+    for (const traderId of traderIds) {
+        unlockTrader(traderId, true);
     }
+
     console.log(`Initial total traders: ${numTraders}`);
     return positions;
 }
 
 async function refreshPerpInfo(signingManager, perpId) {
-    [ammsData[perpId], perpsParams[perpId]] = await Promise.all([
+    [ammState, perpsParams] = await Promise.all([
         queryAMMState(signingManager, perpId).catch((e) => {
             console.log(`Error while queryAMMState in refreshPerpInfo`, e);
             return null;
@@ -295,7 +289,7 @@ async function getConnectedAndFundedSigners(fromWallet, numSigners, includeDrive
             }
         }
     }
-    
+
     let timeEnd = new Date().getTime();
     console.log(`(${timeEnd - timeStart} ms) Funded liquidator wallets after ${numRetries} connection attempts:`, fundedWalletAddresses);
     return fundedSigners;
@@ -313,7 +307,7 @@ async function sendHeartBeat(code, payload) {
         let res = await fetch(heartbeatUrl, {
             method: "POST",
             headers: {
-                "Accept": "application/json",
+                Accept: "application/json",
                 "Content-Type": "application/json",
             },
             body: JSON.stringify(
@@ -337,20 +331,20 @@ async function sendHeartBeat(code, payload) {
     }
 }
 
-async function shouldRestart(runId, heartbeatCode){
+async function shouldRestart(runId, heartbeatCode) {
     try {
         let heartbeatUrl = process.env.HEARTBEAT_SHOULD_RESTART_URL;
         if (!heartbeatUrl) {
             console.warn("Env var HEARTBEAT_SHOULD_RESTART_URL is not set, so if the nodes are pausing the connection, can not restart automatically.");
             return;
         }
-        
+
         let res = await fetch(heartbeatUrl + `/${runId}/${heartbeatCode}`, {
             method: "GET",
             headers: {
-                "Accept": "application/json",
+                Accept: "application/json",
                 "Content-Type": "application/json",
-            },            
+            },
         });
         if (res.statusText.toLowerCase() !== "ok") {
             let responseText = await res.text();
@@ -361,7 +355,7 @@ async function shouldRestart(runId, heartbeatCode){
         }
 
         let restartRes = await res.json();
-        if(restartRes?.shouldRestart){
+        if (restartRes?.shouldRestart) {
             console.warn(`Restarting ${runId}. Time since last heartbeat: ${res?.timeSinceLastHeartbeat}`);
             process.exit(1);
         }
