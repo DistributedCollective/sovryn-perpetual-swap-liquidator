@@ -60,13 +60,14 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
             console.log(`driverManager.once('error') triggered`, e);
             reject(e);
         });
-        let numBlocks = 0;
+        let numBlocks =-1;
 
         //things happening in each block: check for unsafe traders and liquidate them
         driverManager.provider.on("block", async (blockNumber) => {
             try {
                 let timeStart = new Date().getTime();
                 let numTraders = 0;
+                numBlocks++;
                 numTraders += Object.keys(tradersPositions).length || 0;
 
                 ammState = await queryAMMState(driverManager, PERP_ID as unknown as number);
@@ -99,7 +100,6 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
                     duration: timeEnd - timeStart,
                 });
                 blockProcessingErrors = 0;
-                numBlocks++;
                 if (numBlocks >= maxBlocks) {
                     return resolve();
                 }
