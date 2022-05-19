@@ -1,7 +1,7 @@
 //if/when we'll need more than one script parameter, we can use a proper module to parse the CLI args, like minimist or yargs
-const configFileName = process.argv?.[2] || '.env';
-const path = require('path');
-let configPath = path.resolve(__dirname, '../', configFileName);
+const configFileName = process.argv?.[2] || ".env";
+const path = require("path");
+let configPath = path.resolve(__dirname, "../", configFileName);
 require("dotenv").config({ path: configPath });
 
 import TelegramNotifier from "./notifier/TelegramNotifier";
@@ -18,7 +18,7 @@ const { getMarkPrice } = perpUtils;
 const { MANAGER_ADDRESS, NODE_URLS, OWNER_ADDRESS, MAX_BLOCKS_BEFORE_RECONNECT, TELEGRAM_BOT_SECRET, TELEGRAM_CHANNEL_ID } = process.env;
 
 //configured in the liquidator-ecosystem.config.js
-const { PERP_ID, PERP_NAME, IDX_ADDR_START, NUM_ADDRESSES, } = process.env;
+const { PERP_ID, PERP_NAME, IDX_ADDR_START, NUM_ADDRESSES } = process.env;
 
 const fundingLevelAlerts = {
     green: 10,
@@ -60,7 +60,7 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
             console.log(`driverManager.once('error') triggered`, e);
             reject(e);
         });
-        let numBlocks =-1;
+        let numBlocks = -1;
 
         //things happening in each block: check for unsafe traders and liquidate them
         driverManager.provider.on("block", async (blockNumber) => {
@@ -94,7 +94,7 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
                 if (numBlocks % 50 === 0) {
                     console.log(`[${new Date()} (${timeEnd - timeStart} ms) block: ${blockNumber}] numBlocks ${numBlocks} active traders ${numTraders}`);
                 }
-                await sendHeartBeat(`LIQ_${PERP_NAME || 'undefined'}_BLOCK_PROCESSED`, {
+                await sendHeartBeat(`LIQ_${PERP_NAME || "undefined"}_BLOCK_PROCESSED`, {
                     blockNumber,
                     runId,
                     duration: timeEnd - timeStart,
@@ -148,7 +148,11 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
         tradersPositions = await initializeLiquidator(signingManagers);
 
         if (process.env.HEARTBEAT_SHOULD_RESTART_URL) {
-            let intervalId = setInterval(() => shouldRestart(runId, "LIQ_BLOCK_PROCESSED"), 5_000);
+            //only check if dead after 1 minute after the script started, so it has enough time to send some heartbeats
+            setTimeout(() => {
+                console.log(`Starting to check if shouldRestart....`);
+                setInterval(() => shouldRestart(runId, `LIQ_${PERP_NAME || "undefined"}_BLOCK_PROCESSED`), 5_000);
+            }, 60_000);
         } else {
             console.warn("Env var HEARTBEAT_SHOULD_RESTART_URL is not set, so if the nodes are pausing the connection, can not restart automatically.");
         }
