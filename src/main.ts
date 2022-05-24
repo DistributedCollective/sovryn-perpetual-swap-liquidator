@@ -111,6 +111,7 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
                 blockProcessingErrors++;
                 if (blockProcessingErrors >= 5) {
                     await notifier.sendMessage(`Error in block processing callback ${(e as Error).message}`);
+                    blockProcessingErrors = 0;
                 }
                 return reject(e);
             }
