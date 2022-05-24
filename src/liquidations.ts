@@ -37,6 +37,7 @@ export async function liquidateByBotV2(
     for (const traderId in tradersStates) {
         if (tradersStates[traderId].marginAccountPositionBC != 0 && !isTraderSafe(tradersStates[traderId], markPrice, perpParams, ammData)) {
             unsafeTraderIds[traderId] = false;
+            delete tradersStates[traderId];
         }
     }
     if (!Object.keys(unsafeTraderIds).length) {
