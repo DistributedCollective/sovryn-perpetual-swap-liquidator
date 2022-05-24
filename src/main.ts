@@ -9,6 +9,7 @@ import { getPerpTraderIds, getTradersStates, liquidateByBotV2, unlockTrader } fr
 import { AMMState, PerpParameters, perpQueries, perpUtils } from "@sovryn/perpetual-swap";
 import * as walletUtils from "@sovryn/perpetual-swap/dist/scripts/utils/walletUtils";
 import { v4 as uuidv4 } from "uuid";
+import { ABK64x64ToFloat } from "@sovryn/perpetual-swap/dist/scripts/utils/perpMath";
 const fetch = require("node-fetch");
 const { getSigningManagersConnectedToRandomNode, getNumTransactions } = walletUtils;
 const { queryTraderState, queryAMMState, queryPerpParameters } = perpQueries;
@@ -131,7 +132,7 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
         driverManager.on("RealizedPnL", async (perpId, traderId, pnlCC, blockTimestamp) => {
             try {
                 let newTraderState = await queryTraderState(driverManager, perpId, traderId);
-                console.log(`RealizedPnL. Trader ${traderId}, new pos ${newTraderState.marginAccountPositionBC}, pnl ${pnlCC}`);
+                console.log(`RealizedPnL. Trader ${traderId}, new pos ${newTraderState.marginAccountPositionBC}, pnl ${ABK64x64ToFloat(pnlCC)}`);
                 if (newTraderState.marginAccountPositionBC != 0) {
                     tradersPositions[traderId] = newTraderState;
                 } else {
