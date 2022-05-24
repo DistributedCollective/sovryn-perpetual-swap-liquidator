@@ -63,8 +63,24 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
         let numBlocks = -1;
 
         //things happening in each block: check for unsafe traders and liquidate them
+        let blockProcessing = 0;
         driverManager.provider.on("block", async (blockNumber) => {
             try {
+                if (blockProcessing) {
+                    if (blockNumber - blockProcessing > 5) {
+                        console.log(
+                            `LIQUIDATOR_${PERP_NAME || "undefined"} Skip processing block ${blockNumber} because block ${blockProcessing} is still being processed`
+                        );
+                    }
+                    if (blockNumber - blockProcessing > 100) {
+                        let msg = `LIQUIDATOR_${PERP_NAME || "undefined"} Block processing is falling behind. Block being processed is ${blockProcessing}, while current blockNumber is ${blockNumber}`;
+                        console.warn(msg);
+                        await notifier.sendMessage(msg);
+                        process.exit(1);
+                    }
+                    return;
+                }
+                blockProcessing = blockNumber;
                 let timeStart = new Date().getTime();
                 let numTraders = 0;
                 numBlocks++;
