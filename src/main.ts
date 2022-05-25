@@ -66,6 +66,9 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
         let blockProcessing = 0;
         driverManager.provider.on("block", async (blockNumber) => {
             try {
+                console.log(
+                    `Manager connected to ${driverManager.provider.connection.url}`
+                );
                 if (blockProcessing) {
                     if (blockNumber - blockProcessing > 5) {
                         console.log(
