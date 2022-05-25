@@ -10,7 +10,7 @@ import { AMMState, PerpParameters, perpQueries, perpUtils } from "@sovryn/perpet
 import * as walletUtils from "@sovryn/perpetual-swap/dist/scripts/utils/walletUtils";
 import { v4 as uuidv4 } from "uuid";
 const fetch = require("node-fetch");
-const { getSigningManagersConnectedToRandomNode, getNumTransactions } = walletUtils;
+const { getSigningManagersConnectedToFastestNode, getNumTransactions } = walletUtils;
 const { queryTraderState, queryAMMState, queryPerpParameters } = perpQueries;
 const { getMarkPrice } = perpUtils;
 
@@ -268,7 +268,7 @@ async function getConnectedAndFundedSigners(fromWallet, numSigners, includeDrive
     while (true) {
         try {
             //get an array of signingWallets
-            signers = getSigningManagersConnectedToRandomNode(MANAGER_ADDRESS, MNEMONIC, bscNodeURLs, fromWallet, numSigners) || [];
+            signers = await getSigningManagersConnectedToFastestNode(MANAGER_ADDRESS, MNEMONIC, bscNodeURLs, fromWallet, numSigners, PERP_ID) || [];
 
             //get the number of liquidations each can make [{[liquidatorAddress]: numLiquidations}]
             //this also checks whether the signingManagers are connected and the node responds properly
