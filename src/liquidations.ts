@@ -36,7 +36,7 @@ export async function liquidateByBotV2(
 
     for (const traderId in tradersStates) {
         if (tradersStates[traderId].marginAccountPositionBC != 0 && !isTraderSafe(tradersStates[traderId], markPrice, perpParams, ammData)) {
-            unsafeTraderIds[traderId] = false;
+            unsafeTraderIds[traderId] = true;
             delete tradersStates[traderId];
         }
     }
@@ -50,12 +50,12 @@ export async function liquidateByBotV2(
 function isTraderSafe(traderState, markPrice, perpParams, ammData) {
     let traderLiquidationPrice = calculateApproxLiquidationPrice(traderState, ammData, perpParams, 0, 0);
 
-    const liquidatable = traderState.marginAccountPositionBC > 0 ? markPrice <= traderLiquidationPrice : markPrice >= traderLiquidationPrice;
-    if(liquidatable){
+    const traderSafe = traderState.marginAccountPositionBC > 0 ? markPrice >= traderLiquidationPrice : markPrice <= traderLiquidationPrice;
+    if(!traderSafe){
         console.log(`liquidation price ${traderLiquidationPrice}, markPrice ${markPrice}, marginAccountPositionBC ${traderState.marginAccountPositionBC}`);
     }
 
-    return liquidatable;
+    return traderSafe;
 }
 
 async function getAllPerpetualIds(signingManagers): Promise<any[] | undefined> {
@@ -144,13 +144,13 @@ export async function getPerpTraderIds(manager, perpId) {
     return traders;
 }
 
-async function liquidateUnsafeTraders(signingManagers, safeTraders, owner, perpId) {
+async function liquidateUnsafeTraders(signingManagers, unsafeTraders, owner, perpId) {
     let liquidationPromises = Array();
     let i = 0;
     let batchSize = signingManagers.length;
     let result = Object();
-    for (const traderId in safeTraders) {
-        if (!safeTraders[traderId].safe && !isTraderLocked(traderId)) {
+    for (const traderId in unsafeTraders) {
+        if (!isTraderLocked(traderId)) {
             lockTrader(traderId);
             let signingManager = signingManagers[i % signingManagers.length];
             liquidationPromises.push(

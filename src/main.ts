@@ -102,7 +102,9 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
                     if (Object.keys(liquidationResult || {}).length) {
                         console.log(`Liquidations in perpetual ${PERP_ID}: `, JSON.stringify(liquidationResult, null, 2));
                         for (const traderId in liquidationResult){
-                            await notifier.sendMessage(`[LIQUIDATION in ${PERP_NAME}] [${traderId}](https://${process.env.TESTNET ? 'testnet.' : ''}bscscan.com/tx/${liquidationResult?.[traderId]?.result?.hash}) \- ${liquidationResult?.[traderId]?.status}`, {parse_mode: 'MarkdownV2'});
+                            const liquidationMessage = `[LIQUIDATION in ${PERP_NAME}] [${traderId}](https://${process.env.TESTNET ? 'testnet.' : ''}bscscan.com/tx/${liquidationResult?.[traderId]?.result?.hash}) \\- ${liquidationResult?.[traderId]?.status}`;
+                            console.log(`liquidationMessage: `, liquidationMessage)
+                            await notifier.sendMessage(liquidationMessage, {parse_mode: 'MarkdownV2'});
                         }
                     }
                 } else {
@@ -149,6 +151,9 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
 
         driverManager.on("RealizedPnL", async (perpId, traderId, pnlCC, blockTimestamp) => {
             try {
+                if(perpId.toLowerCase() !== PERP_ID?.toLowerCase()){
+                    return;
+                }
                 let newTraderState = await queryTraderState(driverManager, perpId, traderId);
                 console.log(`RealizedPnL. Trader ${traderId}, new pos ${newTraderState.marginAccountPositionBC}, pnl ${pnlCC}`);
                 if (newTraderState.marginAccountPositionBC != 0) {
