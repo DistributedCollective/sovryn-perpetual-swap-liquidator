@@ -50,7 +50,7 @@ export async function liquidateByBotV2(
 function isTraderSafe(traderState, markPrice, perpParams, ammData) {
     let traderLiquidationPrice = calculateApproxLiquidationPrice(traderState, ammData, perpParams, 0, 0);
 
-    const liquidatable = traderState.marginAccountPositionBC > 0 ? markPrice >= traderLiquidationPrice : markPrice <= traderLiquidationPrice;
+    const liquidatable = traderState.marginAccountPositionBC > 0 ? markPrice <= traderLiquidationPrice : markPrice >= traderLiquidationPrice;
     if(liquidatable){
         console.log(`liquidation price ${traderLiquidationPrice}, markPrice ${markPrice}, marginAccountPositionBC ${traderState.marginAccountPositionBC}`);
     }
