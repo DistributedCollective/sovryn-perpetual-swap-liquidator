@@ -16,7 +16,15 @@ Edit the .env file:
 
 Make sure that `OWNER_ADDRESS` is **one of your wallet addresses**, because that's where the commissions earned by liquidating traders will end into!
 
-Make sure the `MANAGER_ADDRESS` and `TOKEN_ADDRESS` point to the AMM that's currently in use and the rBTC ERC20 contract. The ones in the .env-sample should point to the correct ones.
+Make sure the `MANAGER_ADDRESS` and `TOKEN_ADDRESS` point to the AMM that's currently in use and the rBTC ERC20 contract. 
+
+For now there are 2 perpetuals running: BTC/USD and BNB/USD. In order to have one liquidator instance working for each of these, we have it configured as an app in the ecosystem.config.js file. There are a few other env variable which needs to be configured in the above file:
+
+    PERP_ID - the address of the perpetual
+    IDX_START_ADDR - the index of the start wallet generated using the MNEMONIC (ie: for IDX_START_ADDR=3, the derivation path of the starting wallet is m/44'/60'/0'/0/3)
+    NUM_ADDRESSES is the number of wallets that'll be used to relay orders concurrently. (ie: if IDX_START_ADDR=3 and NUM_ADDRESSES=3, then the derivation path of the last wallet used will be m/44'/60'/0'/0/5)
+    PERP_NAME - this is used when sending heartbeats and in logs to differentiate between perpetuals
+
 
 Configure `TELEGRAM_BOT_SECRET` and `TELEGRAM_CHANNEL_ID` with the correct credentials of a telegram bot ([here's how you can create your own](https://core.telegram.org/bots#3-how-do-i-create-a-bot)) so that the liquidator can send you notifications* if something goes wrong.
 
