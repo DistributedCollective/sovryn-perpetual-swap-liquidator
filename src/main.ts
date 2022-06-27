@@ -19,6 +19,10 @@ const { MANAGER_ADDRESS, NODE_URLS, OWNER_ADDRESS, MAX_BLOCKS_BEFORE_RECONNECT, 
 
 //configured in the liquidator-ecosystem.config.js
 const { PERP_ID, PERP_NAME, IDX_ADDR_START, NUM_ADDRESSES } = process.env;
+if(!PERP_ID){
+    console.error("PERP_ID is not set in the .env file");
+    process.exit(1);
+}
 
 const fundingLevelAlerts = {
     green: 10,
@@ -86,7 +90,7 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
                 numBlocks++;
                 numTraders += Object.keys(tradersPositions).length || 0;
 
-                ammState = await queryAMMState(driverManager, PERP_ID as unknown as number);
+                ammState = await queryAMMState(driverManager, PERP_ID || '');
                 let markPrice = getMarkPrice(ammState);
 
                 if (perpsParams !== null) {
