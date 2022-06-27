@@ -277,6 +277,7 @@ async function getConnectedAndFundedSigners(fromWallet, numSigners, includeDrive
         try {
             //get an array of signingWallets
             signers = await getSigningManagersConnectedToFastestNode(MANAGER_ADDRESS, MNEMONIC, bscNodeURLs, fromWallet, numSigners, PERP_ID) || [];
+            console.log(`Connected to fastest node: ${signers[0].provider.host}`);
 
             //get the number of liquidations each can make [{[liquidatorAddress]: numLiquidations}]
             //this also checks whether the signingManagers are connected and the node responds properly
