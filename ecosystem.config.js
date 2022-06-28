@@ -4,6 +4,7 @@ module.exports = {
     script : "ts-node src/main.ts",
     max_memory_restart : "1000M",
     log_date_format : "YYYY-MM-DD HH:mm Z",
+    watch: ['src'],
     env: {
       PERP_ID: "0x369d7c01e026e750d616303e0fa4ac262c55e4ebe19a54cbf15d814b03b1182b",
       IDX_ADDR_START: 0,

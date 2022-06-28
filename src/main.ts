@@ -393,7 +393,7 @@ async function shouldRestart(runId, heartbeatCode) {
 
         let restartRes = await res.json();
         if (restartRes?.shouldRestart) {
-            console.warn(`Restarting ${runId}. Time since last heartbeat: ${res?.timeSinceLastHeartbeat}`);
+            console.warn(`Restarting ${runId}. Time since last heartbeat: ${restartRes?.timeSinceLastHeartbeat}`);
             process.exit(1);
         }
     } catch (error) {
