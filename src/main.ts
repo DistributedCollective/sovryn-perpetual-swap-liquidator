@@ -20,7 +20,7 @@ const { MANAGER_ADDRESS, NODE_URLS, OWNER_ADDRESS, MAX_BLOCKS_BEFORE_RECONNECT, 
 //configured in the liquidator-ecosystem.config.js
 const { PERP_ID, PERP_NAME, IDX_ADDR_START, NUM_ADDRESSES } = process.env;
 if(!PERP_ID){
-    console.error("PERP_ID is not set in the .env file");
+    console.error("PERP_ID is not set in the ecosystem.config.js file. Exiting.");
     process.exit(1);
 }
 
@@ -37,7 +37,7 @@ if (!MNEMONIC) {
 }
 
 const runId = uuidv4();
-console.log(`runId: ${runId}`);
+console.trace(`runId: ${runId}`);
 
 /**
  * {
@@ -51,7 +51,14 @@ let ammState: AMMState | null;
 let perpsParams: PerpParameters | null;
 
 let notifier = getTelegramNotifier(TELEGRAM_BOT_SECRET, TELEGRAM_CHANNEL_ID);
+
 let blockProcessingErrors = 0;
+
+module.exports.start = async function(io){
+    console.log(`--------------------------------------Starting.....`);
+    await main();
+}
+
 /**
  * Run the liquidation script for a period of maxBlocks
  * @param signingManager a signing manager contract instance
@@ -173,7 +180,7 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
     });
 }
 
-(async function main() {
+async function main() {
     try {
         let [driverManager, ...signingManagers] = await getConnectedAndFundedSigners(IDX_ADDR_START, NUM_ADDRESSES);
 
@@ -209,7 +216,7 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
         await notifier.sendMessage(`General error while liquidating users: ${(error as any).message}. Exiting.`);
         process.exit(1);
     }
-})();
+};
 
 async function checkFundingHealth(accounts) {
     //TODO: do this in batches?
@@ -400,3 +407,5 @@ async function shouldRestart(runId, heartbeatCode) {
         console.warn(`Error when shouldRestart:`, error);
     }
 }
+
+console.log(`-----------------------------imported successfully`);

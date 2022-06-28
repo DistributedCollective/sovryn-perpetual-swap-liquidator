@@ -1,0 +1,17 @@
+body {
+    margin: 3rem;
+    background-color: rgb(32, 32, 32);
+    color: #fff;
+}
+
+a {
+  color: #00c3ff;
+}
+
+.table-hover>tbody>tr:hover {
+    background-color: rgb(33 150 243 / 14%);
+}
+
+h2 {
+  margin-top: 2rem;
+}
