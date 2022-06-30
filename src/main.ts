@@ -114,10 +114,10 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
                     if (Object.keys(liquidationResult || {}).length) {
                         console.log(`Liquidations in perpetual ${PERP_ID}: `, JSON.stringify(liquidationResult, null, 2));
                         for (const traderId in liquidationResult) {
-                            const liquidationMessage = `[LIQUIDATION in ${PERP_NAME}] [${traderId}](https://${
+                            let liquidationMessage = `[LIQUIDATION in ${PERP_NAME}] [${traderId}](https://${
                                 process.env.TESTNET ? "testnet." : ""
                             }bscscan.com/tx/${liquidationResult?.[traderId]?.result?.hash}) - ${liquidationResult?.[traderId]?.status}`;
-                            liquidationMessage.replace(/\-/g, "\\-");
+                            liquidationMessage = liquidationMessage.replace(/\-/g, "\\-");
                             console.log(`liquidationMessage: `, liquidationMessage);
                             await notifier.sendMessage(liquidationMessage, { parse_mode: "MarkdownV2" });
                         }
