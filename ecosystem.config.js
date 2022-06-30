@@ -17,6 +17,7 @@ module.exports = {
       HEARTBEAT_SHOULD_RESTART_URL:"https://thenurse.prforge.com/api/heartbeats/should-restart",
       MAX_BLOCKS_BEFORE_RECONNECT:1800,
       OWNER_ADDRESS:"0xE7c7417D1360B188401f4dd4bc757A0bc4dE433f",
+      TESTNET: true,
     }
   },
   {
@@ -36,6 +37,7 @@ module.exports = {
       HEARTBEAT_SHOULD_RESTART_URL:"https://thenurse.prforge.com/api/heartbeats/should-restart",
       MAX_BLOCKS_BEFORE_RECONNECT:1800,
       OWNER_ADDRESS:"0xE7c7417D1360B188401f4dd4bc757A0bc4dE433f",
+      TESTNET: true,
     }
   }]
 }
