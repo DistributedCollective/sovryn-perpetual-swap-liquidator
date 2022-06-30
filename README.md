@@ -5,20 +5,20 @@ Liquidation scripts for Sovryn Perpetual Swaps
 ```
 $ git clone https://github.com/DistributedCollective/sovryn-perpetual-swap-liquidator.git
 $ cd sovryn-perpetual-swap-liquidator
-$ mv .env-sample .env
 $ npm install
 $ npm install -g ts-node
 ``` 
 
 ## Configure it
 
-Edit the .env file:
+For now there are 2 perpetuals running: BTC/USD and BNB/USD. In order to have one liquidator instance working for each of these, we have it configured as an app in the ecosystem.config.js file.
+Edit the ecosystem.config.js file:
 
 Make sure that `OWNER_ADDRESS` is **one of your wallet addresses**, because that's where the commissions earned by liquidating traders will end into!
 
 Make sure the `MANAGER_ADDRESS` and `TOKEN_ADDRESS` point to the AMM that's currently in use and the rBTC ERC20 contract. 
 
-For now there are 2 perpetuals running: BTC/USD and BNB/USD. In order to have one liquidator instance working for each of these, we have it configured as an app in the ecosystem.config.js file. There are a few other env variable which needs to be configured in the above file:
+There are a few other env variable which needs to be configured in the above file:
 
 - `PERP_ID` - the address of the perpetual
 - `IDX_START_ADDR` - the index of the start wallet generated using the MNEMONIC (ie: for IDX_START_ADDR=3, the derivation path of the starting wallet is m/44'/60'/0'/0/3)
@@ -26,9 +26,10 @@ For now there are 2 perpetuals running: BTC/USD and BNB/USD. In order to have on
 - `PERP_NAME` - this is used when sending heartbeats and in logs to differentiate between perpetuals
 
 
-Configure `TELEGRAM_BOT_SECRET` and `TELEGRAM_CHANNEL_ID` with the correct credentials of a telegram bot ([here's how you can create your own](https://core.telegram.org/bots#3-how-do-i-create-a-bot)) so that the liquidator can send you notifications* if something goes wrong.
-
 The `HEARTBEAT_LISTENER_URL` is a heartbeat listening API endpoint. [TheNurse](https://github.com/DistributedCollective/TheNurse) is a project that's being built for this. If there's a running instance of TheNurse at `https://thenurse.example.com`, then `HEARTBEAT_LISTENER_URL` would be set to `https://thenurse.example.com/api/heartbeats`
+
+Create and edit the `.env` file (`mv .env-example .env`):
+Configure `TELEGRAM_BOT_SECRET` and `TELEGRAM_CHANNEL_ID` with the correct credentials of a telegram bot ([here's how you can create your own](https://core.telegram.org/bots#3-how-do-i-create-a-bot)) so that the liquidator can send you notifications* if something goes wrong.
 
 ## Run it.
 
