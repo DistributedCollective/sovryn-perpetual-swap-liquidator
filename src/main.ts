@@ -19,7 +19,7 @@ const { MANAGER_ADDRESS, NODE_URLS, OWNER_ADDRESS, MAX_BLOCKS_BEFORE_RECONNECT, 
 
 //configured in the liquidator-ecosystem.config.js
 const { PERP_ID, PERP_NAME, IDX_ADDR_START, NUM_ADDRESSES } = process.env;
-if(!PERP_ID){
+if (!PERP_ID) {
     console.error("PERP_ID is not set in the .env file");
     process.exit(1);
 }
@@ -73,11 +73,19 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
                 if (blockProcessing) {
                     if (blockNumber - blockProcessing > 5) {
                         console.log(
-                            `LIQUIDATOR_${PERP_NAME || "undefined"} Skip processing block ${blockNumber} because block ${blockProcessing} is still being processed (we're ${blockNumber - blockProcessing} blocks behind). Node ${driverManager.provider.connection.url}`
+                            `LIQUIDATOR_${
+                                PERP_NAME || "undefined"
+                            } Skip processing block ${blockNumber} because block ${blockProcessing} is still being processed (we're ${
+                                blockNumber - blockProcessing
+                            } blocks behind). Node ${driverManager.provider.connection.url}`
                         );
                     }
                     if (blockNumber - blockProcessing > 100) {
-                        let msg = `LIQUIDATOR_${PERP_NAME || "undefined"} Block processing is falling behind. Block being processed is ${blockProcessing}, while current blockNumber is ${blockNumber} (we're ${blockNumber - blockProcessing} blocks behind). Node ${driverManager.provider.connection.url}`;
+                        let msg = `LIQUIDATOR_${
+                            PERP_NAME || "undefined"
+                        } Block processing is falling behind. Block being processed is ${blockProcessing}, while current blockNumber is ${blockNumber} (we're ${
+                            blockNumber - blockProcessing
+                        } blocks behind). Node ${driverManager.provider.connection.url}`;
                         console.warn(msg);
                         await notifier.sendMessage(msg);
                         process.exit(1);
@@ -90,7 +98,7 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
                 numBlocks++;
                 numTraders += Object.keys(tradersPositions).length || 0;
 
-                ammState = await queryAMMState(driverManager, PERP_ID || '');
+                ammState = await queryAMMState(driverManager, PERP_ID || "");
                 let markPrice = getMarkPrice(ammState);
 
                 if (perpsParams !== null) {
@@ -105,10 +113,13 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
                     );
                     if (Object.keys(liquidationResult || {}).length) {
                         console.log(`Liquidations in perpetual ${PERP_ID}: `, JSON.stringify(liquidationResult, null, 2));
-                        for (const traderId in liquidationResult){
-                            const liquidationMessage = `[LIQUIDATION in ${PERP_NAME}] [${traderId}](https://${process.env.TESTNET ? 'testnet.' : ''}bscscan.com/tx/${liquidationResult?.[traderId]?.result?.hash}) \\- ${liquidationResult?.[traderId]?.status}`;
-                            console.log(`liquidationMessage: `, liquidationMessage)
-                            await notifier.sendMessage(liquidationMessage, {parse_mode: 'MarkdownV2'});
+                        for (const traderId in liquidationResult) {
+                            const liquidationMessage = `[LIQUIDATION in ${PERP_NAME}] [${traderId}](https://${
+                                process.env.TESTNET ? "testnet." : ""
+                            }bscscan.com/tx/${liquidationResult?.[traderId]?.result?.hash}) - ${liquidationResult?.[traderId]?.status}`;
+                            liquidationMessage.replace(/\-/g, "\\-");
+                            console.log(`liquidationMessage: `, liquidationMessage);
+                            await notifier.sendMessage(liquidationMessage, { parse_mode: "MarkdownV2" });
                         }
                     }
                 } else {
@@ -155,7 +166,7 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
 
         driverManager.on("RealizedPnL", async (perpId, traderId, pnlCC, blockTimestamp) => {
             try {
-                if(perpId.toLowerCase() !== PERP_ID?.toLowerCase()){
+                if (perpId.toLowerCase() !== PERP_ID?.toLowerCase()) {
                     return;
                 }
                 let newTraderState = await queryTraderState(driverManager, perpId, traderId);
@@ -276,7 +287,7 @@ async function getConnectedAndFundedSigners(fromWallet, numSigners, includeDrive
     while (true) {
         try {
             //get an array of signingWallets
-            signers = await getSigningManagersConnectedToFastestNode(MANAGER_ADDRESS, MNEMONIC, bscNodeURLs, fromWallet, numSigners, PERP_ID) || [];
+            signers = (await getSigningManagersConnectedToFastestNode(MANAGER_ADDRESS, MNEMONIC, bscNodeURLs, fromWallet, numSigners, PERP_ID)) || [];
             console.log(`Connected to fastest node: ${signers[0].provider.connection.url}`);
 
             //get the number of liquidations each can make [{[liquidatorAddress]: numLiquidations}]
