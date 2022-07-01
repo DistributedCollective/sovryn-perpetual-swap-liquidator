@@ -1,99 +1,103 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
     <!-- Latest compiled and minified CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css"
-        integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.8.0/angular-csp.min.css"
-        integrity="sha512-nptw3cPhphu13Dy21CXMS1ceuSy2yxpKswAfZ7bAAE2Lvh8rHXhQFOjU+sSnw4B+mEoQmKFLKOj8lmXKVk3gow=="
-        crossorigin="anonymous" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css"
+      integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu"
+      crossorigin="anonymous"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.8.0/angular-csp.min.css"
+      integrity="sha512-nptw3cPhphu13Dy21CXMS1ceuSy2yxpKswAfZ7bAAE2Lvh8rHXhQFOjU+sSnw4B+mEoQmKFLKOj8lmXKVk3gow=="
+      crossorigin="anonymous"
+    />
     <link rel="stylesheet" type="text/css" href="./styles.css" />
-    <title>Zero Liquidator</title>
-</head>
+    <title>Perpetuals Liquidator</title>
+  </head>
 
-<body ng-controller="appCtrl as ctrl">
+  <body ng-controller="appCtrl as ctrl">
     <div class="container">
-        <h1>Zero Liquidator</h1>
+      <h1>Perpetuals Liquidator</h1>
 
-        <div class="row">
-            <div class="col-12 col-md-12">
-                <h2>Wallet info</h2>
-                <h4>Accounts</h4>
-                <table class="table table-bordered">
-                    <tr>
-                        <th>Account</th>
-                        <th>Total USD</th>
-                        <th>RBTC</th>
-                        <th>ZUSD</th>
-                        <th>ZERO</th>
-                    </tr>
-                    <tr ng-repeat="account in ctrl.accounts">
-                        <td><a ng-href="{{ctrl.blockExplorer}}address/{{account.address}}" target="_blank">{{
-                                account.address }}</a></td>
-                        <td>{{ account.usdBalance }}</td>
-                        <td>
-                            {{ account.rBtcBalance }}
-                        </td>
-                        <td>
-                            {{ account.zusdBalance }}
-                        </td>
-                        <td>
-                            {{ account.zeroBalance }}
-                        </td>
-                    </tr>
-                </table>
-            </div>
+      <div class="row">
+        <div class="col-12 col-md-12">
+          <h2>Wallets info</h2>
+          <h4>Accounts</h4>
+          <table class="table table-bordered">
+            <tr>
+              <th>Account</th>
+              <th>Total BNB</th>
+            </tr>
+
+            <tr
+              ng-repeat="(walletAddress, balance) in ctrl.accounts.signingManagers"
+            >
+              <td>{{walletAddress}}</td>
+              <td>{{balance}}</td>
+            </tr>
+          </table>
         </div>
+      </div>
 
-        <div class="row">
-            <div class="col-md-8 col-xs-12">
-                <table class="table table-bordered">
-                    <tr>
-                        <th>Total actions</th>
-                        <th>Total Profit</th>
-                        <th>Total actions last 24h</th>
-                        <th>Total profit last 24h</th>
-                    </tr>
-                    <tr>
-                        <td>
-                            success: {{ ctrl.totalSuccess }}<br/>
-                            failed: {{ ctrl.totalFailed }}
-                        </td>
-                        <td>{{ ctrl.totalProfit |number:1 }}</td>
-                        <td>
-                            success: {{ ctrl.total24HSuccess }}<br />
-                            failed: {{ ctrl.total24HFailed }}
-                        </td>
-                        <td>{{ ctrl.last24HProfit |number:1 }}</td>
-                    </tr>
-                </table>
-            </div>
+      <div class="row">
+        <div class="col-md-8 col-xs-12">
+          <table class="table table-bordered">
+            <tr>
+              <th>Total actions</th>
+              <th>Total Profit</th>
+              <th>Total actions last 24h</th>
+              <th>Total profit last 24h</th>
+            </tr>
+            <tr>
+              <td>
+                success: {{ ctrl.totalSuccess }}<br />
+                failed: {{ ctrl.totalFailed }}
+              </td>
+              <td>{{ ctrl.totalProfit |number:1 }}</td>
+              <td>
+                success: {{ ctrl.total24HSuccess }}<br />
+                failed: {{ ctrl.total24HFailed }}
+              </td>
+              <td>{{ ctrl.last24HProfit |number:1 }}</td>
+            </tr>
+          </table>
         </div>
+      </div>
 
-        <p>
-            <a class="btn btn-info" href="/troves.html" target="_blank">Troves</a>
-        </p>
+      <p>
+        <a class="btn btn-info" href="/troves.html" target="_blank">Troves</a>
+      </p>
     </div>
 
     <!-- Optional JavaScript -->
     <!-- jQuery first, then Popper.js, then Bootstrap JS -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
-        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
-        crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/js/bootstrap.min.js"
-        integrity="sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5bApTppSuUkhZXN0VxHd"
-        crossorigin="anonymous"></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+      integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/js/bootstrap.min.js"
+      integrity="sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5bApTppSuUkhZXN0VxHd"
+      crossorigin="anonymous"
+    ></script>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.8.0/angular.min.js"
-        integrity="sha512-jiG+LwJB0bmXdn4byKzWH6whPpnLy1pnGA/p3VCXFLk4IJ/Ftfcb22katPTapt35Q6kwrlnRheK6UPOIdJhYTA=="
-        crossorigin="anonymous"></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.8.0/angular.min.js"
+      integrity="sha512-jiG+LwJB0bmXdn4byKzWH6whPpnLy1pnGA/p3VCXFLk4IJ/Ftfcb22katPTapt35Q6kwrlnRheK6UPOIdJhYTA=="
+      crossorigin="anonymous"
+    ></script>
     <script src="./libs/ui-bootstrap-custom-2.5.0.min.js"></script>
     <script src="./libs/ui-bootstrap-custom-tpls-2.5.0.min.js"></script>
     <script src="main.js"></script>
-</body>
-
+  </body>
 </html>

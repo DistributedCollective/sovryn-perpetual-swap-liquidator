@@ -22,23 +22,23 @@ class AppCtrl {
     }
 
     start() {
-        this.getAccountInfo();
+        this.getAccountsInfo();
         this.getNetworkData();
         this.getTotals(); // fire only once
         this.getLast24HTotals();
 
         setInterval(() => {
-            this.getAccountInfo();
+            this.getAccountsInfo();
             this.getLast24HTotals();
         }, 15000);
     }
 
-    getAccountInfo() {
+    getAccountsInfo() {
         let p=this;
 
-        socket.emit("getAccountInfo", (res) => {
-            console.log("response account:", res);
-            p.accounts = [ res ];
+        socket.emit("getAccountsInfo", (res) => {
+            console.log("response account:", res.signingManagers);
+            p.accounts = res;
             p.$scope.$applyAsync();
         });
     }

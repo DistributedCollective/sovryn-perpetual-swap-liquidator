@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start:testnet:BTCUSD": "pm2 start ecosystem.config.js --only liquidator-btcusd",
+    "start:testnet:BTCUSD": "pm2 start ecosystem.config.js --only testnet-liquidator-btcusd",
     "build-client": "npx webpack --config ./public/webpack.config.js"
   },
   "repository": {
