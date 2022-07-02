@@ -1,22 +1,21 @@
 /**
- * DB controller
+ * Datbase controller.
  */
-const p = require("path");
-const SQLite3 = require('sqlite3');
 
-const TroveModel = require("./models/troveModel");
-const TroveStatus = require("./models/troveStatus");
-const Utils = require("./utils/utils");
+const sqlite3 = require('sqlite3').verbose();
+const path = require('path');
 
-const sqlite3 = SQLite3.verbose();
+import Liquidator from './models/liquidator';
+
 
 class DbCtrl {
+
     private db;
-    private troveModel;
-    private 
+    private liqRepo;
+
     async initDb(dbName) {
         return new Promise(resolve => {
-            const file = p.join(__dirname, '../dbs/' + dbName);
+            const file = path.join(__dirname, '../dbs/' + dbName);
             this.db = new sqlite3.Database(file, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
                 if (err) {
                     console.error(err.message, file);
@@ -24,7 +23,7 @@ class DbCtrl {
 
                     console.log('Connected to the ' + dbName + ' database.');
 
-                    this.initRepos().catch(console.error).finally(() => resolve(null));
+                    this.initRepos().catch(console.error).then(() => resolve('Database initialized'));
                 }
             });
         });
@@ -35,124 +34,64 @@ class DbCtrl {
      */
     async initRepos() {
         try {
-            this.troveModel = new TroveModel(this.db);
 
-            await this.troveModel.createTable();
+            this.liqRepo = new Liquidator(this.db);
+            await this.liqRepo.createTable();
         } catch (e) {
             console.error(e);
         }
     }
 
-    /**
-     * Insert a trove
-     */
-    async addTrove(trove) {
-        try {
-            const exists = await this.troveModel.findOne({
-                owner: trove.ownerAddress,
-                status: [TroveStatus.open, TroveStatus.liquidating]
-            });
-            const collateralBtc = trove.collateral.toString();
-            const borrowedUsd = trove.debt.toString();
-            if (exists) {
-                return this.troveModel.update({ id: exists.id }, {
-                    collateralBtc: collateralBtc,
-                    borrowedUsd: borrowedUsd,
-                    status: exists.status == TroveStatus.liquidating ? exists.status : trove.status,
-                    icr: trove.icr
-                });
-            }
 
-            return await this.troveModel.insert({
-                owner: trove.ownerAddress,
-                collateralBtc: collateralBtc,
-                borrowedUsd: borrowedUsd,
-                status: trove.status,
-                icr: trove.icr,
-            });
-        } catch (e) {
-            console.error(e);
-        }
-    }
-
-    async updateTrove(id, { liquidator, txHash, profit, status }) {
+    async addLiquidate({liquidatorAdr, liquidatedAdr, amount, pos, loanId, profit, txHash, status}) {
         try {
-            await this.troveModel.update({ id }, {
-                liquidator,
-                txHash,
+            return await this.liqRepo.insert({
+                liquidatorAdr,
+                liquidatedAdr,
+                amount,
+                pos,
+                loanId,
                 profit,
-                status,
-                liquidatedAt: Utils.formatDate(Date.now() / 1000)
-            });
+                txHash,
+                status
+            })
         } catch (e) {
             console.error(e);
         }
     }
 
-    async updateLiquidatingTrove(ownerAddress, { liquidator, txHash, profit, status }) {
-        const liquidating = await this.db.getTrove(ownerAddress, TroveStatus.liquidating);
-        if (liquidating) {
-            await this.db.updateTrove(liquidating.id, {
-                liquidator,
-                txHash,
-                profit,
-                status,
-            });
-        }
-    }
-
-    /**
-     * Count total successful, failed liquidated troves
-     */
-    async getTotals(last24H) {
+    async getTotals(repo, last24H) {
         try {
+            let table;
             let profit = 0;
+            switch(repo) {
+                case 'liquidator': table = this.liqRepo; break;
+                default: console.warn("Not a known table. Returning liquidations table as default"); table = this.liqRepo;
+            }
             const sqlQuery = last24H ? // select either all actions or only the last 24h ones
-                `SELECT * FROM troves WHERE liquidatedAt BETWEEN DATETIME('now', '-1 day') 
-                    AND DATETIME('now') 
-                    AND status IN ('liquidated', 'failed')` :
-                `SELECT * FROM troves WHERE status IN ('liquidated', 'failed')`;
-            const rows = await this.troveModel.all(sqlQuery);
-            let successActions = 0, failedActions = 0;
+                `SELECT * FROM ${repo} WHERE dateAdded BETWEEN DATETIME('now', '-1 day') AND DATETIME('now')` :
+                `SELECT * FROM ${repo}`;
+            const allRows = await table.all(sqlQuery, (err, rows) => { return rows });
 
-            rows.forEach((row) => {
-                if (row.profit) {
+            allRows.forEach((row) => {
+                if (repo === 'liquidator') {
+                    if (row.profit) {
+                        let [profitValue, symbol] = row.profit.split(' ');
+                        symbol = symbol.toLowerCase();
+                        // const symbolPrice = usdPrices[symbol] ? usdPrices[symbol] : 1;
+                        // const fee = config.liquidationTxFee * usdPrices['rbtc'] || 0;
+                        profit += (Number(profitValue) /* * symbolPrice- fee*/);
+                    }
+                } else {
                     profit += Number(row.profit);
                 }
-                if (row.status == TroveStatus.liquidated) successActions ++;
-                else failedActions ++;
-            });
-            return { successActions, failedActions, profit };
+                return row;
+            })
+            return { totalActionsNumber: allRows.length, profit };
         } catch (e) {
             console.error(e);
         }
-    }
-
-    async getTrove(ownerAddress, status = 'open') {
-        return await this.troveModel.findOne({ owner: ownerAddress, status: status });
-    }
-
-    async listTroves({ status, limit, offset } = {status: '', limit: 10, offset: 0}) {
-        const cond = { status: ''};
-        let orderBy;
-        if (status) cond.status = status;
-        const list = await this.troveModel.find(cond, {
-            limit: limit || 100,
-            offset,
-            orderBy: {
-                status: -1,
-                icr: 1,
-            }
-        });
-        return list || [];
-    }
-
-    async countTroves({ status } = { status: ''}) {
-        const cond = {status: ''};
-        if (status) cond.status = status;
-        const count = await this.troveModel.count(cond);
-        return count;
     }
 }
 
-module.exports = new DbCtrl();
+export default new DbCtrl();

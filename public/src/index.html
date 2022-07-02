@@ -1,103 +1,141 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, shrink-to-fit=no"
-    />
-    <!-- Latest compiled and minified CSS -->
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css"
-      integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu"
-      crossorigin="anonymous"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.8.0/angular-csp.min.css"
-      integrity="sha512-nptw3cPhphu13Dy21CXMS1ceuSy2yxpKswAfZ7bAAE2Lvh8rHXhQFOjU+sSnw4B+mEoQmKFLKOj8lmXKVk3gow=="
-      crossorigin="anonymous"
-    />
-    <link rel="stylesheet" type="text/css" href="./styles.css" />
-    <title>Perpetuals Liquidator</title>
-  </head>
 
-  <body ng-controller="appCtrl as ctrl">
-    <div class="container">
-      <h1>Perpetuals Liquidator</h1>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+    integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.8.0/angular-csp.min.css" integrity="sha512-nptw3cPhphu13Dy21CXMS1ceuSy2yxpKswAfZ7bAAE2Lvh8rHXhQFOjU+sSnw4B+mEoQmKFLKOj8lmXKVk3gow==" crossorigin="anonymous" />
+  <link rel="stylesheet" type="text/css" href="./styles.css" />
+  <title>Sovryn node</title>
+</head>
 
-      <div class="row">
-        <div class="col-12 col-md-12">
-          <h2>Wallets info</h2>
-          <h4>Accounts</h4>
-          <table class="table table-bordered">
-            <tr>
-              <th>Account</th>
-              <th>Total BNB</th>
-            </tr>
+<body ng-controller="appCtrl as ctrl">
+  <div class="container">
+    <h1>Sovryn Node</h1>
 
-            <tr
-              ng-repeat="(walletAddress, balance) in ctrl.accounts.signingManagers"
-            >
-              <td>{{walletAddress}}</td>
-              <td>{{balance}}</td>
-            </tr>
-          </table>
+    <div class="row">
+      <div class="col-12">
+        <h2>Node monitor</h2>
+        <div role="alert" id="lastBlock" ng-class="{ 
+          'alert alert-success': ctrl.lastBlockOurNode > 0 && ctrl.lastBlockOurNode >= ctrl.lastBlockExternalNode,
+          'alert alert-danger': ctrl.lastBlockOurNode > 0 && ctrl.lastBlockOurNode < ctrl.lastBlockExternalNode 
+        }"
+          >Last block: 
+          <span id="lastBlockLn">{{ ctrl.lastBlockOurNode }}</span> Sovryn node, <span
+            id="lastBlockPn">{{ ctrl.lastBlockExternalNode }}</span> IOV node
         </div>
       </div>
-
-      <div class="row">
-        <div class="col-md-8 col-xs-12">
-          <table class="table table-bordered">
-            <tr>
-              <th>Total actions</th>
-              <th>Total Profit</th>
-              <th>Total actions last 24h</th>
-              <th>Total profit last 24h</th>
-            </tr>
-            <tr>
-              <td>
-                success: {{ ctrl.totalSuccess }}<br />
-                failed: {{ ctrl.totalFailed }}
-              </td>
-              <td>{{ ctrl.totalProfit |number:1 }}</td>
-              <td>
-                success: {{ ctrl.total24HSuccess }}<br />
-                failed: {{ ctrl.total24HFailed }}
-              </td>
-              <td>{{ ctrl.last24HProfit |number:1 }}</td>
-            </tr>
-          </table>
-        </div>
-      </div>
-
-      <p>
-        <a class="btn btn-info" href="/troves.html" target="_blank">Troves</a>
-      </p>
     </div>
 
-    <!-- Optional JavaScript -->
-    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-    <script
-      src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
-      integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
-      crossorigin="anonymous"
-    ></script>
-    <script
-      src="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/js/bootstrap.min.js"
-      integrity="sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5bApTppSuUkhZXN0VxHd"
-      crossorigin="anonymous"
-    ></script>
-    <script src="/socket.io/socket.io.js"></script>
-    <script
-      src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.8.0/angular.min.js"
-      integrity="sha512-jiG+LwJB0bmXdn4byKzWH6whPpnLy1pnGA/p3VCXFLk4IJ/Ftfcb22katPTapt35Q6kwrlnRheK6UPOIdJhYTA=="
-      crossorigin="anonymous"
-    ></script>
-    <script src="./libs/ui-bootstrap-custom-2.5.0.min.js"></script>
-    <script src="./libs/ui-bootstrap-custom-tpls-2.5.0.min.js"></script>
-    <script src="main.js"></script>
-  </body>
+    <div class="row">
+      <div class="col-6">
+        <h2>Wallet info</h2>
+        <h4>Total USD balance: {{ ctrl.totalUsdBalance }}</h4>
+        <h4>Accounts</h4>
+        <table>
+          <tr>
+            <th>Account</th>
+            <th>Account type</th>
+            <th>USD</th>
+            <th>RBTC</th>
+            <th ng-repeat="token in ctrl.tokens">
+              {{ token.toUpperCase() }}
+            </th>
+          </tr>
+          <tr ng-repeat="account in ctrl.accounts">
+            <td><a ng-href="{{ctrl.blockExplorer}}address/{{account.address}}" target="_blank">{{ account.address }}</a></td>
+            <td>{{ account.type }}</td>
+            <td>{{ account.usdBalance }}</td>
+            <td ng-class="{'alert alert-success': account.rBtcBalance.overThreshold,'alert alert-danger': !account.rBtcBalance.overThreshold}">
+              {{ account.rBtcBalance.balance }}
+            </td>
+            <td ng-if="account.tokenBalances.length > 0" ng-repeat="balance in account.tokenBalances"
+              ng-class="{'alert alert-success': balance.overThreshold,'alert alert-danger': !balance.overThreshold}">
+                {{ balance.balance }}
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <div ng-if="ctrl.fastBtcWallet || ctrl.ogWallet" class="col-6">
+       <h2>Other wallets</h2>
+       <h4>Fast-Btc-Relay</h4>
+       <div role="alert" id="accInfoFbr">Balance of <span id="accBalanceFbr">>{{ ctrl.fastBtcWallet.address }}</span><br /><span id="balanceFbr">{{ ctrl.fastBtcWallet.balance }}</span></div>
+        <h4>Early access token wallet</h4>
+       <div role="alert" id="accInfoOg">Balance of <span id="accBalanceOg">>{{ ctrl.ogWallet.address }}</span><br /><span id="balanceOg">{{ ctrl.ogWallet.balance }}</span></div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-12">
+        <br />
+        <br />
+        <table>
+          <tr>
+            <th>Node type</th>
+            <th>Total actions</th>
+            <th>Total Profit</th>
+            <th>Total actions last 24h</th>
+            <th>Total profit last 24h</th>
+            <th>Details</th>
+          </tr>
+          <tr>
+            <td>Liquidator</td>
+            <td>{{ ctrl.totalLiquidations }}</td>
+            <td>{{ ctrl.totalLiquidatorProfit }}</td>
+            <td>{{ ctrl.last24HLiquidations }}</td>
+            <td>{{ ctrl.last24HLiquidatorProfit }}</td>
+            <td>
+              <div>Current open positions: <span>{{ ctrl.numberOpenPositions }}</span></div>
+              <div>Waiting to get liquidated: <span>{{ ctrl.numberLiquidationsInQueue }}</span></div>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="row" ng-if="ctrl.tokenDetails">
+      <div class="col-12 mt-4">
+        <h2>Token details</h2>
+        <table class="table">
+          <tr>
+            <th></th>
+            <th ng-repeat="info in ctrl.tokenDetails">
+              {{ info.tokenSymbol.toUpperCase() }}
+            </th>
+          </tr>
+          <tr>
+            <td>Max liquidatable</td>
+            <td ng-repeat="info in ctrl.tokenDetails">
+              {{ info.totalMaxLiquidatable }}
+            </td>
+          </tr>
+          <tr>
+            <td>Max seizable</td>
+            <td ng-repeat="info in ctrl.tokenDetails">
+              {{ info.totalMaxSeizable }}
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Optional JavaScript -->
+  <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+    integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+    crossorigin="anonymous"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+    integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+    crossorigin="anonymous"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.8.0/angular.min.js" integrity="sha512-jiG+LwJB0bmXdn4byKzWH6whPpnLy1pnGA/p3VCXFLk4IJ/Ftfcb22katPTapt35Q6kwrlnRheK6UPOIdJhYTA==" crossorigin="anonymous"></script>
+  <script src="main.js"></script>
+</body>
+
 </html>

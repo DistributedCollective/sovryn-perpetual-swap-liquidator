@@ -1,7 +1,7 @@
-const _ = require('lodash');
+import _ from 'lodash';
 
-module.exports = class BaseModel {
-    constructor(db, tableName, createTableSQL) {
+export default class BaseModel {
+    constructor (db, tableName, createTableSQL) {
         this.db = db;
         this.table = tableName;
         this.createTableSQL = createTableSQL;
@@ -9,14 +9,14 @@ module.exports = class BaseModel {
 
     run(sql, params = []) {
         return new Promise((resolve, reject) => {
-            this.db.run(sql, params, function (err) {
+            this.db.run(sql, params, function(err) {
                 if (err) {
                     console.error('Error running sql ' + sql);
                     console.error(err);
                     reject(err);
                 }
                 else {
-                    resolve({ id: this.lastID });
+                    resolve( { id: this.lastID } );
                 }
             });
         });
@@ -56,25 +56,14 @@ module.exports = class BaseModel {
         return await this.run(this.createTableSQL);
     }
 
-    parseWhereClause(criteria) {
-        return _.keys(criteria).map(k => {
-            if (criteria[k] instanceof Array) {
-                const clause = `${k} IN (${criteria[k].map(v => `'${v}'`).join(',')})`;
-                delete criteria[k];
-                return clause;
-            }
-            return `${k} = ?`;
-        }).join(' AND ');
-    }
-
 
     /**
      *
      * @param {object} criteria - query object for finding a user
      */
     findOne(criteria) {
-        const where = this.parseWhereClause(criteria);
         const params = _.values(criteria);
+        const where = _.keys(criteria).map(k => `${k} = ?`).join(' AND ');
         const sql = `SELECT * FROM ${this.table} WHERE ${where}`;
 
         return this.get(sql, params);
@@ -87,11 +76,12 @@ module.exports = class BaseModel {
      * @param offset
      * @param orderBy
      */
-    find(criteria, { limit = 10, offset = 0, orderBy = null } = {}) {
+    find(criteria, {limit, offset, orderBy} = {}) {
         let sql = `SELECT * FROM ${this.table}`;
+        const params = _.values(criteria);
 
         if (_.size(criteria) > 0) {
-            const where = this.parseWhereClause(criteria);
+            const where = _.keys(criteria).map(k => `${k} = ?`).join(' AND ');
             sql += ' WHERE ' + where;
         }
 
@@ -106,7 +96,6 @@ module.exports = class BaseModel {
             sql += ' OFFSET ' + offset;
         }
 
-        const params = _.values(criteria);
         return this.all(sql, params);
     }
 
@@ -120,15 +109,15 @@ module.exports = class BaseModel {
         const result = await this.run(sql, params);
 
         if (result && result.id != null) {
-            return await this.findOne({ id: result.id });
+            return await this.findOne({id: result.id});
         } else {
             return Promise.reject("Can not insert new item to table " + this.table);
         }
     }
 
-    async update(criteria, updateObject) {
+    update(criteria, updateObject) {
         const updateFields = _.keys(updateObject).map(key => key + ' = ?').join(', ');
-        const where = this.parseWhereClause(criteria);
+        const where = _.keys(criteria).map(k => `${k} = ?`).join(' AND ');
         const params = _.values(updateObject).concat(_.values(criteria));
         const sql = `
             UPDATE ${this.table}
@@ -139,26 +128,13 @@ module.exports = class BaseModel {
         return this.run(sql, params);
     }
 
-    async delete(criteria) {
+    delete(criteria) {
         const params = _.values(criteria);
-        const where = this.parseWhereClause(criteria);
+        const where = _.keys(criteria).map(k => `${k} = ?`).join(' AND ');
         const sql = `
             DELETE FROM ${this.table} WHERE ${where}
         `;
 
         return this.run(sql, params);
-    }
-
-    async count(criteria) {
-        let sql = `Select Count(*) as total FROM ${this.table}`;
-
-        if (_.size(criteria) > 0) {
-            const where = this.parseWhereClause(criteria);
-            sql += ' WHERE ' + where;
-        }
-
-        const params = _.values(criteria);
-        const res = await this.all(sql, params);
-        return res && res[0] && res[0].total || 0;
     }
 }

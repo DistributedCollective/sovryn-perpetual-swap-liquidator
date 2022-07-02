@@ -1,9 +1,9 @@
 const { Telegram } = require('telegraf');
-const cfg = require('../configs');
 
+const {TELEGRAM_BOT_SECRET, TELEGRAM_CHANNEL_ID} = process.env;
 let telegramBot;
-if (cfg.telegram && cfg.telegram.apiToken) {
-    telegramBot = new Telegram(cfg.telegram.apiToken);
+if (TELEGRAM_BOT_SECRET) {
+    telegramBot = new Telegram(TELEGRAM_BOT_SECRET);
 }
 
 module.exports = new class Utils {
@@ -19,7 +19,7 @@ module.exports = new class Utils {
     async sendTelegramMsg(msg) {
         if (telegramBot) {
             try {
-                await telegramBot.sendMessage(cfg.telegram.chatId, msg, { parse_mode: 'HTML' });
+                await telegramBot.sendMessage(TELEGRAM_CHANNEL_ID, msg, { parse_mode: 'HTML' });
             } catch (e) {
                 console.error(e);
             }

@@ -1,19 +1,43 @@
 const socket = io();
 
-
 class AppCtrl {
     constructor($scope) {
-        this.accounts = [];
+        this.lastBlockOurNode = 0;
+        this.lastBlockExternalNode = 0;
+        this.numberOpenPositions = 0;
+        this.numberLiquidationsInQueue = 0;
+        this.arbitrageDeals = [];
+
+        this.liquidationWallets = [];
+        this.artbitrageWallet = null;
+        this.rolloverWallet = null;
+        this.fastBtcWallet = null;
+        this.ogWallet = null;
+      
+        this.tokens = [];
+        this.accounts = []
         this.blockExplorer = '';
 
-        this.totalProfit = 0;
-        this.last24HProfit = 0;
-        this.totalSuccess = 0;
-        this.totalFailed = 0;
-        this.total24HSuccess = 0;
-        this.total24HFailed = 0;
+        this.totalLiquidations = 0;
+        this.totalArbitrages = 0;
+        this.totalRollovers = 0;
+
+        this.totalLiquidatorProfit =0;
+        this.totalArbitrageProfit = 0;
+        this.totalRolloverProfit = 0;
+
+        this.last24HLiquidations = 0;
+        this.last24HArbitrages = 0;
+        this.last24HRollovers = 0;
+
+        this.last24HLiquidatorProfit = 0;
+        this.last24HArbitrageProfit = 0;
+        this.last24HRolloverProfit = 0;
+
+        this.tokenDetails = null;
 
         this.$scope = $scope;
+
         this.start();
     }
 
@@ -22,23 +46,56 @@ class AppCtrl {
     }
 
     start() {
-        this.getAccountsInfo();
+        console.log(`AppCtrl started`);
+
+        this.getSignals();
+        this.getAddresses();
         this.getNetworkData();
         this.getTotals(); // fire only once
         this.getLast24HTotals();
 
         setInterval(() => {
-            this.getAccountsInfo();
+            this.getSignals();
+            this.getAddresses();
             this.getLast24HTotals();
         }, 15000);
     }
 
-    getAccountsInfo() {
+    getSignals() {
         let p=this;
 
-        socket.emit("getAccountsInfo", (res) => {
-            console.log("response account:", res.signingManagers);
-            p.accounts = res;
+        socket.emit("getSignals", (res) => {
+            console.log("response signals", res);
+
+            p.lastBlockOurNode = res.blockInfoPn;
+            p.lastBlockExternalNode = res.blockInfoLn;
+
+            p.numberOpenPositions = res.positionInfo;
+            p.numberLiquidationsInQueue = res.liqInfo;
+            p.arbitrageDeals = res.arbitrageDeals;
+            p.tokenDetails = res.tokenDetails;
+
+            p.$scope.$applyAsync();
+        });
+    }
+
+    getAddresses() {
+        let p=this;
+
+        socket.emit("getAddresses", (res) => {
+            console.log("response addresses:", res);
+
+            p.liquidationWallets = res.liquidator;
+            p.arbitrageWallet = res.arbitrage;
+            p.rolloverWallet = res.rollover;
+            p.tokens = res.liquidator[0].tokenBalances.map(balance => balance.token);
+            p.accounts = [...res.liquidator, res.arbitrage, res.rollover].filter(a => !!a);
+            if (res.watcher) {
+                p.accounts.push(res.watcher);
+            }
+            p.totalUsdBalance = 0;
+            p.accounts.forEach(acc => p.totalUsdBalance += Number(acc.usdBalance))
+
             p.$scope.$applyAsync();
         });
     }
@@ -52,94 +109,46 @@ class AppCtrl {
             p.blockExplorer = res.blockExplorer;
 
             p.$scope.$applyAsync();
-        });
+        })
     }
 
     getTotals() {
         let p=this;
 
         socket.emit("getTotals", (res) => {
-            console.log("response totals:", res);
-            p.totalSuccess = res.successActions;
-            p.totalFailed = res.failedActions;
-            p.totalProfit = res.profit;
+            console.log("response totals for liquidations, arbitrages and rollovers:", res);
+
+            p.totalLiquidations = res.totalLiquidations;
+            p.totalArbitrages = res.totalArbitrages;
+            p.totalRollovers = res.totalRollovers;
+
+            p.totalLiquidatorProfit = res.totalLiquidatorProfit;
+            p.totalArbitrageProfit = res.totalArbitrageProfit;
+            p.totalRolloverProfit = res.totalRolloverProfit;
+
             p.$scope.$applyAsync();
-        });
+        })
     }
 
     getLast24HTotals() {
         let p=this;
 
         socket.emit("getLast24HTotals", (res) => {
-            console.log("response last 24h totals:", res);
-            p.total24HSuccess = res.successActions;
-            p.total24HFailed = res.failedActions;
-            p.last24HProfit = res.profit;
-            p.$scope.$applyAsync();
-        });
-    }
-}
+            console.log("response last 24h totals for liquidations, arbitrages and rollovers:", res);
 
+            p.last24HLiquidations = res.totalLiquidations;
+            p.last24HArbitrages = res.totalArbitrages;
+            p.last24HRollovers = res.totalRollovers;
 
-class TrovesCtrl {
-    constructor($scope) {
-        this.troves = {
-            list: [],
-            status: "",
-            page: 1,
-            limit: 100,
-            total: 0,
-        };
-
-        this.$scope = $scope;
-        this.listTroves(true);
-        this.getNetworkData();
-
-        setInterval(() => {
-            this.listTroves();
-        }, 30000);
-    }
-
-    static get $inject() {
-        return ['$scope'];
-    }
-
-    getNetworkData() {
-        let p = this;
-
-        socket.emit("getNetworkData", (res) => {
-            p.blockExplorer = res.blockExplorer;
+            p.last24HLiquidatorProfit = res.totalLiquidatorProfit;
+            p.last24HArbitrageProfit = res.totalArbitrageProfit;
+            p.last24HRolloverProfit = res.totalRolloverProfit;
 
             p.$scope.$applyAsync();
         })
     }
-
-    listTroves(resetPage) {
-        const p = this;
-        const tableData = this.troves;
-        const page = resetPage ? 0 : tableData.page;
-        const offset = (page - 1) * tableData.limit;
-        const filter = {
-            offset: offset,
-            limit: tableData.limit,
-            status: tableData.status,
-        };
-        socket.emit('listTroves', filter, (result) => {
-            tableData.list = result.list;
-            tableData.total = result.total;
-            tableData.page = Math.floor(result.offset / result.limit) + 1;
-            p.$scope.$applyAsync();
-        });
-    }
-
-    short(text) {
-        return text.substr(0, 4) + '...' + text.substr(text.length - 4);
-    }
 }
 
-angular.module('app', ['ui.bootstrap'])
-    .controller('appCtrl', AppCtrl)
-    .controller('trovesCtrl', TrovesCtrl)
-    ;
+angular.module('app', []).controller('appCtrl', AppCtrl);
 
 angular.bootstrap(document, ['app']);

@@ -14,10 +14,8 @@ const { getSigningManagersConnectedToFastestNode, getNumTransactions } = walletU
 const { queryTraderState, queryAMMState, queryPerpParameters } = perpQueries;
 const { getMarkPrice } = perpUtils;
 
-const db = require("./db");
-const monitor = require("./monitor");
-const TroveStatus = require("./models/troveStatus");
-const Utils = require("./utils/utils");
+import dbCtrl from "./db";
+import monitor from "./monitor";
 
 //configured in the liquidator-ecosystem.config.js
 const { MANAGER_ADDRESS, NODE_URLS, OWNER_ADDRESS, PERP_ID, PERP_NAME, IDX_ADDR_START, NUM_ADDRESSES, DB_NAME } = process.env;
@@ -95,15 +93,16 @@ async function startLiquidator(driverManager, signingManagers) {
 
 async function runMonitoring(io, driverManager, signingManagers) {
     try {
-        await db.initDb(DB_NAME);
-        monitor.init(driverManager, signingManagers);
+        await dbCtrl.initDb(DB_NAME);
+        monitor.start(driverManager, signingManagers, tradersPositions);
         io.on('connection', (socket) => {
             socket.on('getAccountsInfo', async (cb) => {
-                monitor.getAccountsInfo(cb, driverManager, signingManagers)
+                monitor.getAccountsInfo(cb)
             });
-            // socket.on('getNetworkData', async (cb) => monitor.getNetworkData(cb));
+            socket.on('getSignals', async (cb) => monitor.getSignals(cb));
+            socket.on('getNetworkData', async (cb) => monitor.getNetworkData(cb));
             // socket.on('getTotals', async (cb) => monitor.getTotals(cb));
-            // socket.on('getLast24HTotals', async (cb) => monitor.getTotals(cb, true));
+            socket.on('getLast24HTotals', async (cb) => monitor.getTotals(cb, true));
             // socket.on('listTroves', async (...args) => monitor.listTroves(...args));
         });
     } catch (error) {
