@@ -8,7 +8,7 @@ const { formatEther } = require("ethers/lib/utils");
 //  import A from '../secrets/accounts';
 //  import C from './contract';
 //  import conf from '../config/config';
-const { PUBLIC_NODE_PROVIDER, BLOCK_EXPLORER } = process.env;
+const { PUBLIC_NODE_PROVIDER, BLOCK_EXPLORER, BALANCE_THRESHOLD, PERP_NAME } = process.env;
 //  import common from './common';
 import dbCtrl from "./db";
 //  import accounts from '../secrets/accounts';
@@ -41,6 +41,7 @@ class MonitorController {
             blockInfoPn: await this.getCurrentBlockPublicNode(),
             accountInfoLiq: await this.getAccountsInfo(null),
             positionInfo: await this.getOpenPositions(),
+            perpName: process.env.PERP_NAME,
             //  liqInfo: await this.getOpenLiquidations(),
         };
         if (typeof cb === "function") cb(resp);
@@ -101,7 +102,6 @@ class MonitorController {
 
     getCurrentBlockPublicNode() {
         let p = this;
-        console.log(`getCurrentBlockPublicNode`, PUBLIC_NODE_PROVIDER);
         return new Promise((resolve) => {
             axios({
                 method: "post",
@@ -149,17 +149,33 @@ class MonitorController {
     }
 
     async getAccountsInfo(cb) {
-        let accountWithInfo = {
-            driverManagerAddress: this.driverManager.address,
-            signingManagers: {},
-        };
+        let accountWithInfo = Array();
+
+        let dmAddress = await this.driverManager.signer.getAddress();
+        let [dmBalance, dmLastBlock] = await Promise.all([
+            this.driverManager.provider.getBalance(dmAddress).then( b => formatEther(b)),
+            this.driverManager.provider.getBlockNumber().then( bNr => parseInt(bNr)).catch(e => -2),
+        ]);
+
+        accountWithInfo.push({
+            address: dmAddress,
+            balance: dmBalance,
+            balanceThreshold: -1,
+            overThreshold: true,
+            accountType: 'driverManager',
+            lastBlock: dmLastBlock,
+            nodeUrl: this.driverManager.provider.connection.url,
+        });
+        
         let balancesPromises = Array();
         let addressesPromises = Array();
+        let lastBlockPromises = Array();
         for (const manager of this.signingManagers) {
             addressesPromises.push(manager.signer.getAddress());
         }
         let walletsAddresses = await Promise.all(addressesPromises);
 
+        let i = 0;        
         for (const wallet of walletsAddresses) {
             balancesPromises.push(
                 this.driverManager.provider
@@ -170,11 +186,23 @@ class MonitorController {
                         return 0;
                     })
             );
+
+            lastBlockPromises.push(this.signingManagers[i].provider.getBlockNumber().then( bNr => parseInt(bNr)).catch(e => -2));
         }
 
         let balances = await Promise.all(balancesPromises);
+        let lastBlocks = await Promise.all(lastBlockPromises);
+        
         for (let i = 0; i < balances.length; i++) {
-            accountWithInfo.signingManagers[walletsAddresses[i]] = balances[i];
+            accountWithInfo.push({
+                address: walletsAddresses[i],
+                balance: balances[i],
+                balanceThreshold: BALANCE_THRESHOLD,
+                overThreshold: balances[i] > parseInt(BALANCE_THRESHOLD || '0'),
+                accountType: 'signingManager',
+                lastBlock: lastBlocks[i],
+                nodeUrl: this.signingManagers[i].provider.connection.url
+            });
         }
 
         if (typeof cb === "function") cb(accountWithInfo);
@@ -191,7 +219,7 @@ class MonitorController {
     //     let accountWithInfo = {
     //         address: account.adr,
     //         type,
-    //         rBtcBalance: {
+    //         balanceBNB: {
     //             balance: _wrtcBal.toFixed(5),
     //             overThreshold: _wrtcBal > conf.balanceThresholds["rbtc"],
     //         },
@@ -208,7 +236,7 @@ class MonitorController {
     //         overThreshold: tokenBalance.balance > conf.balanceThresholds[tokenBalance.token],
     //     }));
 
-    //     let rbtcBal = Number(accountWithInfo.rBtcBalance.balance) || 0;
+    //     let rbtcBal = Number(accountWithInfo.balanceBNB.balance) || 0;
     //     let usdBal = 0;
     //     for (const tokenBal of accountWithInfo.tokenBalances) {
     //         let bal = Number(tokenBal.balance) || 0;

@@ -21,6 +21,7 @@ module.exports = {
       DB_NAME: "liquidator_testnet_btcusd.db",
       BLOCK_EXPLORER: "https://testnet.bscscan.com/",
       SERVER_PORT: 3004,
+      BALANCE_THRESHOLD: 1,
     }
   },
   {
@@ -43,6 +44,7 @@ module.exports = {
       DB_NAME: "liquidator_testnet_bnbusd.db",
       BLOCK_EXPLORER: "https://testnet.bscscan.com/",
       SERVER_PORT: 3005,
+      BALANCE_THRESHOLD: 1,
     }
   }]
 }

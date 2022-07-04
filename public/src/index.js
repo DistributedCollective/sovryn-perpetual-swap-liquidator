@@ -49,14 +49,15 @@ class AppCtrl {
         console.log(`AppCtrl started`);
 
         this.getSignals();
-        this.getAddresses();
+        this.getAccountsInfo();
         this.getNetworkData();
         this.getTotals(); // fire only once
         this.getLast24HTotals();
+        this.getOpenPositions();
 
         setInterval(() => {
             this.getSignals();
-            this.getAddresses();
+            this.getAccountsInfo();
             this.getLast24HTotals();
         }, 15000);
     }
@@ -69,32 +70,32 @@ class AppCtrl {
 
             p.lastBlockOurNode = res.blockInfoPn;
             p.lastBlockExternalNode = res.blockInfoLn;
-
-            p.numberOpenPositions = res.positionInfo;
-            p.numberLiquidationsInQueue = res.liqInfo;
-            p.arbitrageDeals = res.arbitrageDeals;
-            p.tokenDetails = res.tokenDetails;
+            p.perpName = res.perpName;
 
             p.$scope.$applyAsync();
         });
     }
 
-    getAddresses() {
+    getAccountsInfo() {
         let p=this;
 
-        socket.emit("getAddresses", (res) => {
+        socket.emit("getAccountsInfo", (res) => {
             console.log("response addresses:", res);
 
-            p.liquidationWallets = res.liquidator;
-            p.arbitrageWallet = res.arbitrage;
-            p.rolloverWallet = res.rollover;
-            p.tokens = res.liquidator[0].tokenBalances.map(balance => balance.token);
-            p.accounts = [...res.liquidator, res.arbitrage, res.rollover].filter(a => !!a);
-            if (res.watcher) {
-                p.accounts.push(res.watcher);
-            }
-            p.totalUsdBalance = 0;
-            p.accounts.forEach(acc => p.totalUsdBalance += Number(acc.usdBalance))
+            p.accounts = res;
+
+
+
+            // for (const [addr, balance] of Object.entries(res.signingManagers)){
+            //     p.accounts.push({
+            //         address: addr,
+            //         balanceBNB: {
+            //             balance: balance.balance,
+            //             overThreshold: balance.balance > balance.balanceThreshold,
+            //         },
+            //         type: 'liquidator',
+            //     });
+            // }
 
             p.$scope.$applyAsync();
         });
@@ -107,6 +108,33 @@ class AppCtrl {
             console.log("network data:", res);
 
             p.blockExplorer = res.blockExplorer;
+
+            p.$scope.$applyAsync();
+        })
+    }
+
+    getOpenPositions() {
+        let p=this;
+
+        socket.emit("getOpenPositions", (res) => {
+            console.log("open positions:", res);
+
+            p.positionsOverview = {
+                markPrice: res.markPrice,
+                totalOpenPositionsSize: 0,
+                totalCollateral: 0,
+                totalLongs: 0,
+                totalShorts: 0,
+            }
+            p.openPositions = Array();           
+
+            for (const [trader, position] of Object.entries(res.openPositions)){
+                position.traderAddress = trader;
+                p.openPositions.push(position);
+                p.positionsOverview.totalLongs += position.marginAccountPositionBC > 0 ? position.marginAccountPositionBC : 0;
+                p.positionsOverview.totalShorts += position.marginAccountPositionBC < 0 ? Math.abs(position.marginAccountPositionBC) : 0;
+            }
+            p.positionsOverview.totalOpenPositionsSize = p.positionsOverview.totalLongs + p.positionsOverview.totalShorts;
 
             p.$scope.$applyAsync();
         })

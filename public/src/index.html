@@ -13,7 +13,7 @@
 
 <body ng-controller="appCtrl as ctrl">
   <div class="container">
-    <h1>Sovryn Node</h1>
+    <h1>{{ctrl.perpName}} Liquidator</h1>
 
     <div class="row">
       <div class="col-12">
@@ -24,7 +24,7 @@
         }"
           >Last block: 
           <span id="lastBlockLn">{{ ctrl.lastBlockOurNode }}</span> Sovryn node, <span
-            id="lastBlockPn">{{ ctrl.lastBlockExternalNode }}</span> IOV node
+            id="lastBlockPn">{{ ctrl.lastBlockExternalNode }}</span> Public node
         </div>
       </div>
     </div>
@@ -32,95 +32,82 @@
     <div class="row">
       <div class="col-6">
         <h2>Wallet info</h2>
-        <h4>Total USD balance: {{ ctrl.totalUsdBalance }}</h4>
         <h4>Accounts</h4>
         <table>
           <tr>
             <th>Account</th>
             <th>Account type</th>
-            <th>USD</th>
-            <th>RBTC</th>
-            <th ng-repeat="token in ctrl.tokens">
-              {{ token.toUpperCase() }}
-            </th>
+            <th>Last Block</th>
+            <th>Node URL</th>
+            <th>BNB</th>
           </tr>
           <tr ng-repeat="account in ctrl.accounts">
             <td><a ng-href="{{ctrl.blockExplorer}}address/{{account.address}}" target="_blank">{{ account.address }}</a></td>
-            <td>{{ account.type }}</td>
-            <td>{{ account.usdBalance }}</td>
-            <td ng-class="{'alert alert-success': account.rBtcBalance.overThreshold,'alert alert-danger': !account.rBtcBalance.overThreshold}">
-              {{ account.rBtcBalance.balance }}
-            </td>
-            <td ng-if="account.tokenBalances.length > 0" ng-repeat="balance in account.tokenBalances"
-              ng-class="{'alert alert-success': balance.overThreshold,'alert alert-danger': !balance.overThreshold}">
-                {{ balance.balance }}
+            <td>{{ account.accountType }}</td>
+            <td ng-class="{ 
+                'alert alert-success': account.lastBlock > 0 && account.lastBlock >= ctrl.lastBlockExternalNode,
+                'alert alert-danger': account.lastBlock > 0 && account.lastBlock < ctrl.lastBlockExternalNode 
+              }">{{ account.lastBlock }}</td>
+            <td>{{ account.nodeUrl }}</td>
+            <td ng-class="{'alert alert-success': account.overThreshold,'alert alert-danger': !account.overThreshold}">
+              {{ account.balance }}
             </td>
           </tr>
         </table>
       </div>
-
-      <div ng-if="ctrl.fastBtcWallet || ctrl.ogWallet" class="col-6">
-       <h2>Other wallets</h2>
-       <h4>Fast-Btc-Relay</h4>
-       <div role="alert" id="accInfoFbr">Balance of <span id="accBalanceFbr">>{{ ctrl.fastBtcWallet.address }}</span><br /><span id="balanceFbr">{{ ctrl.fastBtcWallet.balance }}</span></div>
-        <h4>Early access token wallet</h4>
-       <div role="alert" id="accInfoOg">Balance of <span id="accBalanceOg">>{{ ctrl.ogWallet.address }}</span><br /><span id="balanceOg">{{ ctrl.ogWallet.balance }}</span></div>
-      </div>
     </div>
+    <div class="row">
+        <div class="col-12">
+            <br/>
+            <br/>
+            <table>
+                <tr><th colspan="7">Open Positions</th></tr>
+                <tr>
+                    <th>Trader</th>
+                    <th>Margin Balance CC</th>
+                    <th>Available Margin CC</th>
+                    <th>Available Cash CC</th>
+                    <th>Margin Account Cash CC</th>
+                    <th>Margin Account Position BC</th>
+                    <th>Margin Account LockedIn Vale QC</th>
+                </tr>
+                <tr ng-repeat="position in ctrl.openPositions">
+                    <td><a ng-href="{{ctrl.blockExplorer}}address/{{position.traderAddress}}" target="_blank">{{ position.traderAddress }}</a></td>
+                    <td>{{ position.marginBalanceCC }}</td>
+                    <td>{{ position.availableMarginCC }}</td>
+                    <td>{{ position.availableCashCC }}</td>
+                    <td>{{ position.marginAccountCashCC }}</td>
+                    <td>{{ position.marginAccountPositionBC }}</td>
+                    <td>{{ position.marginAccountLockedInValueQC }}</td>
+                </tr>
+        </div>
+    </div>
+    <div class="row"></div>
 
     <div class="row">
       <div class="col-12">
         <br />
         <br />
         <table>
+            <tr><th colspan="5">Perpetual Overview</th></tr>
           <tr>
-            <th>Node type</th>
-            <th>Total actions</th>
-            <th>Total Profit</th>
-            <th>Total actions last 24h</th>
-            <th>Total profit last 24h</th>
-            <th>Details</th>
+            <th>Mark Price</th>
+            <th>Total Open Positions</th>
+            <th>Total Longs</th>
+            <th>Total Shorts</th>
+            <th>Totals</th>
           </tr>
           <tr>
-            <td>Liquidator</td>
-            <td>{{ ctrl.totalLiquidations }}</td>
-            <td>{{ ctrl.totalLiquidatorProfit }}</td>
-            <td>{{ ctrl.last24HLiquidations }}</td>
-            <td>{{ ctrl.last24HLiquidatorProfit }}</td>
-            <td>
-              <div>Current open positions: <span>{{ ctrl.numberOpenPositions }}</span></div>
-              <div>Waiting to get liquidated: <span>{{ ctrl.numberLiquidationsInQueue }}</span></div>
-            </td>
+            <td>{{ ctrl.positionsOverview.markPrice }}</td>
+            <td>{{ ctrl.openPositions.length }}</td>
+            <td>{{ ctrl.positionsOverview.totalLongs }}</td>
+            <td>{{ ctrl.positionsOverview.totalShorts }}</td>
+            <td>{{ ctrl.positionsOverview.totalOpenPositionsSize }}</td>
           </tr>
         </table>
       </div>
     </div>
 
-    <div class="row" ng-if="ctrl.tokenDetails">
-      <div class="col-12 mt-4">
-        <h2>Token details</h2>
-        <table class="table">
-          <tr>
-            <th></th>
-            <th ng-repeat="info in ctrl.tokenDetails">
-              {{ info.tokenSymbol.toUpperCase() }}
-            </th>
-          </tr>
-          <tr>
-            <td>Max liquidatable</td>
-            <td ng-repeat="info in ctrl.tokenDetails">
-              {{ info.totalMaxLiquidatable }}
-            </td>
-          </tr>
-          <tr>
-            <td>Max seizable</td>
-            <td ng-repeat="info in ctrl.tokenDetails">
-              {{ info.totalMaxSeizable }}
-            </td>
-          </tr>
-        </table>
-      </div>
-    </div>
   </div>
 
 
