@@ -94,23 +94,15 @@ async function startLiquidator(driverManager, signingManagers) {
 async function runMonitoring(io, driverManager, signingManagers) {
     try {
         await dbCtrl.initDb(DB_NAME);
-        monitor.start(driverManager, signingManagers, tradersPositions);
+        monitor.start(driverManager, signingManagers);
         io.on("connection", (socket) => {
             socket.on("getAccountsInfo", async (cb) => {
                 monitor.getAccountsInfo(cb);
             });
             socket.on("getSignals", async (cb) => monitor.getSignals(cb));
-            socket.on("getOpenPositions", async (cb) => {
-                let markPrice = getMarkPrice(ammState as any);
-                return cb({
-                    openPositions: tradersPositions,
-                    markPrice,
-                });
-            });
+            socket.on("getOpenPositions", async (cb) => monitor.getOpenPositions(ammState, perpsParams, tradersPositions, cb));
             socket.on("getNetworkData", async (cb) => monitor.getNetworkData(cb));
-            // socket.on('getTotals', async (cb) => monitor.getTotals(cb));
             socket.on("getLast24HTotals", async (cb) => monitor.getTotals(cb, true));
-            // socket.on('listTroves', async (...args) => monitor.listTroves(...args));
         });
     } catch (error) {
         console.log(`Error in runMonitoring:`, error);

@@ -4,37 +4,8 @@ class AppCtrl {
     constructor($scope) {
         this.lastBlockOurNode = 0;
         this.lastBlockExternalNode = 0;
-        this.numberOpenPositions = 0;
-        this.numberLiquidationsInQueue = 0;
-        this.arbitrageDeals = [];
-
-        this.liquidationWallets = [];
-        this.artbitrageWallet = null;
-        this.rolloverWallet = null;
-        this.fastBtcWallet = null;
-        this.ogWallet = null;
-      
-        this.tokens = [];
         this.accounts = []
         this.blockExplorer = '';
-
-        this.totalLiquidations = 0;
-        this.totalArbitrages = 0;
-        this.totalRollovers = 0;
-
-        this.totalLiquidatorProfit =0;
-        this.totalArbitrageProfit = 0;
-        this.totalRolloverProfit = 0;
-
-        this.last24HLiquidations = 0;
-        this.last24HArbitrages = 0;
-        this.last24HRollovers = 0;
-
-        this.last24HLiquidatorProfit = 0;
-        this.last24HArbitrageProfit = 0;
-        this.last24HRolloverProfit = 0;
-
-        this.tokenDetails = null;
 
         this.$scope = $scope;
 
@@ -83,20 +54,6 @@ class AppCtrl {
             console.log("response addresses:", res);
 
             p.accounts = res;
-
-
-
-            // for (const [addr, balance] of Object.entries(res.signingManagers)){
-            //     p.accounts.push({
-            //         address: addr,
-            //         balanceBNB: {
-            //             balance: balance.balance,
-            //             overThreshold: balance.balance > balance.balanceThreshold,
-            //         },
-            //         type: 'liquidator',
-            //     });
-            // }
-
             p.$scope.$applyAsync();
         });
     }
@@ -118,6 +75,7 @@ class AppCtrl {
 
         socket.emit("getOpenPositions", (res) => {
             console.log("open positions:", res);
+            p.openPositions = [...res.openPositions];
 
             p.positionsOverview = {
                 markPrice: res.markPrice,
@@ -126,11 +84,8 @@ class AppCtrl {
                 totalLongs: 0,
                 totalShorts: 0,
             }
-            p.openPositions = Array();           
 
-            for (const [trader, position] of Object.entries(res.openPositions)){
-                position.traderAddress = trader;
-                p.openPositions.push(position);
+            for (const position of res.openPositions){
                 p.positionsOverview.totalLongs += position.marginAccountPositionBC > 0 ? position.marginAccountPositionBC : 0;
                 p.positionsOverview.totalShorts += position.marginAccountPositionBC < 0 ? Math.abs(position.marginAccountPositionBC) : 0;
             }

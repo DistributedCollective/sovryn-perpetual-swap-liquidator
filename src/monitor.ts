@@ -1,35 +1,24 @@
 /**
- *  Accepts client requests and checks the health of the Sovryn node in 60s interval
- *  If the system is not healthy it sends a message to the telegram group
+ *  Accepts client requests and returns internal info about the liquitator
  */
 const axios = require("axios");
 const { formatEther } = require("ethers/lib/utils");
 
-//  import A from '../secrets/accounts';
-//  import C from './contract';
-//  import conf from '../config/config';
 const { PUBLIC_NODE_PROVIDER, BLOCK_EXPLORER, BALANCE_THRESHOLD, PERP_NAME } = process.env;
-//  import common from './common';
+import { calculateApproxLiquidationPrice, getMarkPrice, TraderState } from "@sovryn/perpetual-swap/dist/scripts/utils/perpUtils";
+
 import dbCtrl from "./db";
-//  import accounts from '../secrets/accounts';
-//  import arbitrageCtrl from './arbitrage';
+
 
 class MonitorController {
     private driverManager;
     private signingManagers;
-    private positions;
 
-    start(driverManager, signingManagers, positions) {
-        this.positions = positions;
+    start(driverManager, signingManagers) {
+
         this.signingManagers = signingManagers;
         this.driverManager = driverManager;
 
-        //  if(conf.errorBotTelegram!="") {
-        //      let p = this;
-        //      setInterval(() => {
-        //         // p.checkSystem();
-        //      }, 1000 * 60);
-        //  }
     }
 
     /**
@@ -40,31 +29,11 @@ class MonitorController {
             blockInfoLn: await this.getCurrentBlockPrivateNode(),
             blockInfoPn: await this.getCurrentBlockPublicNode(),
             accountInfoLiq: await this.getAccountsInfo(null),
-            positionInfo: await this.getOpenPositions(),
             perpName: process.env.PERP_NAME,
-            //  liqInfo: await this.getOpenLiquidations(),
         };
         if (typeof cb === "function") cb(resp);
         else return resp;
     }
-
-    //  async getAddresses(cb) {
-    //      const resp = {
-    //          liquidator: await Promise.all(accounts.liquidator.map(async (account) => await this.getAccountInfoForFrontend(account, "liquidator"))),
-    //          rollover: await this.getAccountInfoForFrontend(accounts.rollover[0], "rollover"),
-    //          arbitrage: await this.getAccountInfoForFrontend(accounts.arbitrage[0], "arbitrage"),
-    //      };
-    //      if (conf.watcherContract) {
-    //          resp.watcher = await this.getAccountInfoForFrontend(
-    //              {
-    //                  adr: conf.watcherContract,
-    //              },
-    //              "watcher contract"
-    //          );
-    //      }
-    //      if (typeof cb === "function") cb(resp);
-    //      else return resp;
-    //  }
 
     async getTotals(cb, last24h) {
         console.log(last24h ? "get last 24h totals" : "get totals");
@@ -77,28 +46,26 @@ class MonitorController {
         else return resp;
     }
 
-    /**
-     * Internal check
-     */
-    //  async checkSystem() {
-    //     //  if (conf.network === "test") return;
-
-    //      const sInfo = await this.getSignals();
-    //      for (let b in sInfo.accountInfoLiq) {
-    //          if (sInfo.accountInfoLiq[b] < 0.001)
-    //              common.telegramBot.sendMessage("No money left for liquidator-wallet " + b + " on " + conf.network + " network");
-    //      }
-
-    //      for (let b in sInfo.accountInfoRoll) {
-    //          if (sInfo.accountInfoRoll[b] < 0.001)
-    //              common.telegramBot.sendMessage("No money left for rollover-wallet " + b + " on " + conf.network + " network");
-    //      }
-
-    //      for (let b in sInfo.accountInfoArb) {
-    //          if (sInfo.accountInfoArb[b] < 0.001)
-    //              common.telegramBot.sendMessage("No money left for arbitrage-wallet " + b + " on " + conf.network + " network");
-    //      }
-    //  }
+    async getOpenPositions(ammState, perpParams, tradersPositions, cb){
+        let markPrice = getMarkPrice(ammState as any);
+        let positionsWithLiquidationPrice = Array();
+        for (const [traderId, traderState] of Object.entries(tradersPositions)){
+            let liquidationPrice = calculateApproxLiquidationPrice(traderState as TraderState, ammState, perpParams, 0, 0);
+            let position = Object.assign({
+                liquidationPrice,
+                traderAddress: traderId,
+            }, traderState);
+            positionsWithLiquidationPrice.push(position);
+        }
+        if (typeof cb === 'function') return cb({
+            openPositions: positionsWithLiquidationPrice,
+            markPrice,
+        });
+        return {
+            openPositions: positionsWithLiquidationPrice,
+            markPrice,
+        }
+    }
 
     getCurrentBlockPublicNode() {
         let p = this;
@@ -209,57 +176,6 @@ class MonitorController {
 
         return accountWithInfo;
     }
-
-    // async getAccountInfoForFrontend(account, type) {
-    //     if (!account) return null;
-    //     const tokenAddresses = C.getAllTokenAddresses();
-    //     let _wrtcBal = await C.web3.eth.getBalance(account.adr);
-    //     _wrtcBal = Number(C.web3.utils.fromWei(_wrtcBal, "Ether"));
-
-    //     let accountWithInfo = {
-    //         address: account.adr,
-    //         type,
-    //         balanceBNB: {
-    //             balance: _wrtcBal.toFixed(5),
-    //             overThreshold: _wrtcBal > conf.balanceThresholds["rbtc"],
-    //         },
-    //         tokenBalances: await Promise.all(
-    //             tokenAddresses.map(async (tokenAddress) => ({
-    //                 token: C.getTokenSymbol(tokenAddress),
-    //                 balance: Number(C.web3.utils.fromWei(await C.getWalletTokenBalance(account.adr, tokenAddress), "Ether")).toFixed(5),
-    //             }))
-    //         ),
-    //     };
-    //     accountWithInfo.tokenBalances = accountWithInfo.tokenBalances.map((tokenBalance) => ({
-    //         ...tokenBalance,
-    //         token: tokenBalance.token === "rbtc" ? "wrbtc" : tokenBalance.token,
-    //         overThreshold: tokenBalance.balance > conf.balanceThresholds[tokenBalance.token],
-    //     }));
-
-    //     let rbtcBal = Number(accountWithInfo.balanceBNB.balance) || 0;
-    //     let usdBal = 0;
-    //     for (const tokenBal of accountWithInfo.tokenBalances) {
-    //         let bal = Number(tokenBal.balance) || 0;
-    //         if (tokenBal.token == "wrbtc") bal += rbtcBal;
-    //         if (bal <= 0) continue;
-    //         const price = await this.getUsdPrice(tokenBal.token);
-    //         usdBal += price * bal || 0;
-    //     }
-
-    //     accountWithInfo.usdBalance = usdBal.toFixed(2);
-
-    //     return accountWithInfo;
-    // }
-
-    getOpenPositions() {
-        return Object.keys(this.positions).length;
-    }
-
-    //todo: add from-to, to be called from cliet
-    async getOpenPositionsDetails(cb) {
-        if (typeof cb === "function") cb(this.positions);
-    }
-    
 }
 
 export default new MonitorController();

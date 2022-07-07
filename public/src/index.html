@@ -70,15 +70,17 @@
                     <th>Margin Account Cash CC</th>
                     <th>Margin Account Position BC</th>
                     <th>Margin Account LockedIn Vale QC</th>
+                    <th>Liquidation Price</th>
                 </tr>
                 <tr ng-repeat="position in ctrl.openPositions">
                     <td><a ng-href="{{ctrl.blockExplorer}}address/{{position.traderAddress}}" target="_blank">{{ position.traderAddress }}</a></td>
-                    <td>{{ position.marginBalanceCC }}</td>
-                    <td>{{ position.availableMarginCC }}</td>
-                    <td>{{ position.availableCashCC }}</td>
-                    <td>{{ position.marginAccountCashCC }}</td>
-                    <td>{{ position.marginAccountPositionBC }}</td>
-                    <td>{{ position.marginAccountLockedInValueQC }}</td>
+                    <td>{{ position.marginBalanceCC.toFixed(6) }}</td>
+                    <td>{{ position.availableMarginCC.toFixed(6) }}</td>
+                    <td>{{ position.availableCashCC.toFixed(6) }}</td>
+                    <td>{{ position.marginAccountCashCC.toFixed(6) }}</td>
+                    <td>{{ position.marginAccountPositionBC.toFixed(6) }}</td>
+                    <td>{{ position.marginAccountLockedInValueQC.toFixed(6) }}</td>
+                    <td>{{ position.liquidationPrice.toFixed(2) }}</td>
                 </tr>
         </div>
     </div>
@@ -98,11 +100,11 @@
             <th>Totals</th>
           </tr>
           <tr>
-            <td>{{ ctrl.positionsOverview.markPrice }}</td>
+            <td>{{ ctrl.positionsOverview.markPrice.toFixed(2) }}</td>
             <td>{{ ctrl.openPositions.length }}</td>
-            <td>{{ ctrl.positionsOverview.totalLongs }}</td>
-            <td>{{ ctrl.positionsOverview.totalShorts }}</td>
-            <td>{{ ctrl.positionsOverview.totalOpenPositionsSize }}</td>
+            <td>{{ ctrl.positionsOverview.totalLongs.toFixed(6) }}</td>
+            <td>{{ ctrl.positionsOverview.totalShorts.toFixed(6) }}</td>
+            <td>{{ ctrl.positionsOverview.totalOpenPositionsSize.toFixed(6) }}</td>
           </tr>
         </table>
       </div>
