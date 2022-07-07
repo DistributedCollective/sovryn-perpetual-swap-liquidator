@@ -22,6 +22,7 @@ class AppCtrl {
         this.getSignals();
         this.getAccountsInfo();
         this.getNetworkData();
+        this.getLatestLiquidations();
         this.getTotals(); // fire only once
         this.getLast24HTotals();
         this.getOpenPositions();
@@ -30,11 +31,12 @@ class AppCtrl {
             this.getSignals();
             this.getAccountsInfo();
             this.getLast24HTotals();
+            this.getLatestLiquidations();
         }, 15000);
     }
 
     getSignals() {
-        let p=this;
+        let p = this;
 
         socket.emit("getSignals", (res) => {
             console.log("response signals", res);
@@ -48,7 +50,7 @@ class AppCtrl {
     }
 
     getAccountsInfo() {
-        let p=this;
+        let p = this;
 
         socket.emit("getAccountsInfo", (res) => {
             console.log("response addresses:", res);
@@ -59,7 +61,7 @@ class AppCtrl {
     }
 
     getNetworkData() {
-        let p=this;
+        let p = this;
 
         socket.emit("getNetworkData", (res) => {
             console.log("network data:", res);
@@ -71,7 +73,7 @@ class AppCtrl {
     }
 
     getOpenPositions() {
-        let p=this;
+        let p = this;
 
         socket.emit("getOpenPositions", (res) => {
             console.log("open positions:", res);
@@ -85,7 +87,7 @@ class AppCtrl {
                 totalShorts: 0,
             }
 
-            for (const position of res.openPositions){
+            for (const position of res.openPositions) {
                 p.positionsOverview.totalLongs += position.marginAccountPositionBC > 0 ? position.marginAccountPositionBC : 0;
                 p.positionsOverview.totalShorts += position.marginAccountPositionBC < 0 ? Math.abs(position.marginAccountPositionBC) : 0;
             }
@@ -96,7 +98,7 @@ class AppCtrl {
     }
 
     getTotals() {
-        let p=this;
+        let p = this;
 
         socket.emit("getTotals", (res) => {
             console.log("response totals for liquidations, arbitrages and rollovers:", res);
@@ -113,8 +115,17 @@ class AppCtrl {
         })
     }
 
+    getLatestLiquidations() {
+        let p = this;
+        socket.emit("getLatestLiquidations", (res) => {
+            console.log("response latest liquidations:", res);
+            p.latestLiquidations = res.liquidations;
+            p.$scope.$applyAsync();
+        })
+    }
+
     getLast24HTotals() {
-        let p=this;
+        let p = this;
 
         socket.emit("getLast24HTotals", (res) => {
             console.log("response last 24h totals for liquidations, arbitrages and rollovers:", res);

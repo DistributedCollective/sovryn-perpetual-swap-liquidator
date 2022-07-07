@@ -22,6 +22,7 @@ module.exports = {
       BLOCK_EXPLORER: "https://testnet.bscscan.com/",
       SERVER_PORT: 3004,
       BALANCE_THRESHOLD: 1,
+      GRAPHQL_ENDPOINT: "https://sovryn-perps-subgraph.test.sovryn.app/subgraphs/name/DistributedCollective/Sovryn-perpetual-swaps-subgraph",
     }
   },
   {
@@ -45,6 +46,7 @@ module.exports = {
       BLOCK_EXPLORER: "https://testnet.bscscan.com/",
       SERVER_PORT: 3005,
       BALANCE_THRESHOLD: 1,
+      GRAPHQL_ENDPOINT: "https://sovryn-perps-subgraph.test.sovryn.app/subgraphs/name/DistributedCollective/Sovryn-perpetual-swaps-subgraph",
     }
   }]
 }

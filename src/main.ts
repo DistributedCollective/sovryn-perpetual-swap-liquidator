@@ -100,6 +100,7 @@ async function runMonitoring(io, driverManager, signingManagers) {
                 monitor.getAccountsInfo(cb);
             });
             socket.on("getSignals", async (cb) => monitor.getSignals(cb));
+            socket.on("getLatestLiquidations", async (cb) => monitor.getLatestLiquidations(cb));
             socket.on("getOpenPositions", async (cb) => monitor.getOpenPositions(ammState, perpsParams, tradersPositions, cb));
             socket.on("getNetworkData", async (cb) => monitor.getNetworkData(cb));
             socket.on("getLast24HTotals", async (cb) => monitor.getTotals(cb, true));

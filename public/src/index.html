@@ -56,6 +56,29 @@
         </table>
       </div>
     </div>
+
+    <div class="row">
+      <div class="col-6">
+        <h2>Latest liquidations</h2>
+        <table>
+          <tr>
+            <th>Trader</th>
+            <th>Amount Liquidated BC</th>
+            <th>Liquidation Price</th>
+            <th>New Position Size BC</th>
+            <th>Transaction ID</th>
+          </tr>
+          <tr ng-repeat="liquidation in ctrl.latestLiquidations">
+            <td><a ng-href="{{ctrl.blockExplorer}}address/{{liquidation.trader}}" target="_blank">{{ liquidation.trader }}</a></td>
+            <td>{{ liquidation.amountLiquidatedBC.toFixed(6) }}</td>
+            <td>{{ liquidation.liquidationPrice.toFixed(2) }}</td>
+            <td>{{ liquidation.newPositionSizeBC.toFixed(6) }}</td>
+            <td><a ng-href="{{ctrl.blockExplorer}}tx/{{liquidation.txId}}" target="_blank">{{ liquidation.txId }}</a></td>
+          </tr>
+
+        </table>
+        </div>
+      </div>
     <div class="row">
         <div class="col-12">
             <br/>
