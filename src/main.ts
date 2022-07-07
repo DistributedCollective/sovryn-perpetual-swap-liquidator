@@ -58,6 +58,7 @@ let notifier = getTelegramNotifier(TELEGRAM_BOT_SECRET, TELEGRAM_CHANNEL_ID);
 let blockProcessingErrors = 0;
 
 module.exports.start = async function (io) {
+    console.log(`Starting liquidator...`);
     let [driverManager, ...signingManagers] = await getConnectedAndFundedSigners(IDX_ADDR_START, NUM_ADDRESSES);
     await Promise.all([startLiquidator(driverManager, signingManagers), runMonitoring(io, driverManager, signingManagers)]);
 };

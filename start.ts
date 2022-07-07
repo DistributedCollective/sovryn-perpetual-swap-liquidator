@@ -18,6 +18,8 @@ http.listen(SERVER_PORT, () => {
     console.log("listening on *:" + SERVER_PORT);
 });
 
+console.log("Server started");
+
 main.start(io)
     .then((r) => {
         console.log("main.start() returned: done??", r);
