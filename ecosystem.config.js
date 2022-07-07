@@ -13,11 +13,16 @@ module.exports = {
       MANAGER_ADDRESS:"0xE952cCc755758A127623163e96B032619Bb42143",
       TOKEN_ADDRESS:"0xcF3D22A034Fa157985F0Fe71F15477446f80Be26",
       NODE_URLS:'["https://bsc.sovryn.app/testnet","https://data-seed-prebsc-1-s1.binance.org:8545/","https://data-seed-prebsc-2-s1.binance.org:8545/","http://data-seed-prebsc-1-s2.binance.org:8545/","http://data-seed-prebsc-2-s2.binance.org:8545/","https://data-seed-prebsc-1-s3.binance.org:8545","https://data-seed-prebsc-2-s3.binance.org:8545"]',
+      PUBLIC_NODE_PROVIDER: 'https://data-seed-prebsc-1-s1.binance.org:8545/',
       HEARTBEAT_LISTENER_URL:"https://thenurse.prforge.com/api/heartbeats",
       HEARTBEAT_SHOULD_RESTART_URL:"https://thenurse.prforge.com/api/heartbeats/should-restart",
-      MAX_BLOCKS_BEFORE_RECONNECT:1800,
       OWNER_ADDRESS:"0xE7c7417D1360B188401f4dd4bc757A0bc4dE433f",
       TESTNET: true,
+      DB_NAME: "liquidator_testnet_btcusd.db",
+      BLOCK_EXPLORER: "https://testnet.bscscan.com/",
+      SERVER_PORT: 3004,
+      BALANCE_THRESHOLD: 1,
+      GRAPHQL_ENDPOINT: "https://sovryn-perps-subgraph.test.sovryn.app/subgraphs/name/DistributedCollective/Sovryn-perpetual-swaps-subgraph",
     }
   },
   {
@@ -35,9 +40,13 @@ module.exports = {
       NODE_URLS:'["https://bsc.sovryn.app/testnet","https://data-seed-prebsc-1-s1.binance.org:8545/","https://data-seed-prebsc-2-s1.binance.org:8545/","http://data-seed-prebsc-1-s2.binance.org:8545/","http://data-seed-prebsc-2-s2.binance.org:8545/","https://data-seed-prebsc-1-s3.binance.org:8545","https://data-seed-prebsc-2-s3.binance.org:8545"]',
       HEARTBEAT_LISTENER_URL:"https://thenurse.prforge.com/api/heartbeats",
       HEARTBEAT_SHOULD_RESTART_URL:"https://thenurse.prforge.com/api/heartbeats/should-restart",
-      MAX_BLOCKS_BEFORE_RECONNECT:1800,
       OWNER_ADDRESS:"0xE7c7417D1360B188401f4dd4bc757A0bc4dE433f",
       TESTNET: true,
+      DB_NAME: "liquidator_testnet_bnbusd.db",
+      BLOCK_EXPLORER: "https://testnet.bscscan.com/",
+      SERVER_PORT: 3005,
+      BALANCE_THRESHOLD: 1,
+      GRAPHQL_ENDPOINT: "https://sovryn-perps-subgraph.test.sovryn.app/subgraphs/name/DistributedCollective/Sovryn-perpetual-swaps-subgraph",
     }
   }]
 }

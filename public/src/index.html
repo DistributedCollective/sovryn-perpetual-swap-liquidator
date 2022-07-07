@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+    integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.8.0/angular-csp.min.css" integrity="sha512-nptw3cPhphu13Dy21CXMS1ceuSy2yxpKswAfZ7bAAE2Lvh8rHXhQFOjU+sSnw4B+mEoQmKFLKOj8lmXKVk3gow==" crossorigin="anonymous" />
+  <link rel="stylesheet" type="text/css" href="./styles.css" />
+  <title>Sovryn node</title>
+</head>
+
+<body ng-controller="appCtrl as ctrl">
+  <div class="container">
+    <h1>{{ctrl.perpName}} Liquidator</h1>
+
+    <div class="row">
+      <div class="col-12">
+        <h2>Node monitor</h2>
+        <div role="alert" id="lastBlock" ng-class="{ 
+          'alert alert-success': ctrl.lastBlockOurNode > 0 && ctrl.lastBlockOurNode >= ctrl.lastBlockExternalNode,
+          'alert alert-danger': ctrl.lastBlockOurNode > 0 && ctrl.lastBlockOurNode < ctrl.lastBlockExternalNode 
+        }"
+          >Last block: 
+          <span id="lastBlockLn">{{ ctrl.lastBlockOurNode }}</span> Sovryn node, <span
+            id="lastBlockPn">{{ ctrl.lastBlockExternalNode }}</span> Public node
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-6">
+        <h2>Wallet info</h2>
+        <h4>Accounts</h4>
+        <table>
+          <tr>
+            <th>Account</th>
+            <th>Account type</th>
+            <th>Last Block</th>
+            <th>Node URL</th>
+            <th>BNB</th>
+          </tr>
+          <tr ng-repeat="account in ctrl.accounts">
+            <td><a ng-href="{{ctrl.blockExplorer}}address/{{account.address}}" target="_blank">{{ account.address }}</a></td>
+            <td>{{ account.accountType }}</td>
+            <td ng-class="{ 
+                'alert alert-success': account.lastBlock > 0 && account.lastBlock >= ctrl.lastBlockExternalNode,
+                'alert alert-danger': account.lastBlock > 0 && account.lastBlock < ctrl.lastBlockExternalNode 
+              }">{{ account.lastBlock }}</td>
+            <td>{{ account.nodeUrl }}</td>
+            <td ng-class="{'alert alert-success': account.overThreshold,'alert alert-danger': !account.overThreshold}">
+              {{ account.balance }}
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-6">
+        <h2>Latest liquidations</h2>
+        <table>
+          <tr>
+            <th>Trader</th>
+            <th>Amount Liquidated BC</th>
+            <th>Liquidation Price</th>
+            <th>New Position Size BC</th>
+            <th>Transaction ID</th>
+          </tr>
+          <tr ng-repeat="liquidation in ctrl.latestLiquidations">
+            <td><a ng-href="{{ctrl.blockExplorer}}address/{{liquidation.trader}}" target="_blank">{{ liquidation.trader }}</a></td>
+            <td>{{ liquidation.amountLiquidatedBC.toFixed(6) }}</td>
+            <td>{{ liquidation.liquidationPrice.toFixed(2) }}</td>
+            <td>{{ liquidation.newPositionSizeBC.toFixed(6) }}</td>
+            <td><a ng-href="{{ctrl.blockExplorer}}tx/{{liquidation.txId}}" target="_blank">{{ liquidation.txId }}</a></td>
+          </tr>
+
+        </table>
+        </div>
+      </div>
+    <div class="row">
+        <div class="col-12">
+            <br/>
+            <br/>
+            <table>
+                <tr><th colspan="7">Open Positions</th></tr>
+                <tr>
+                    <th>Trader</th>
+                    <th>Margin Balance CC</th>
+                    <th>Available Margin CC</th>
+                    <th>Available Cash CC</th>
+                    <th>Margin Account Cash CC</th>
+                    <th>Margin Account Position BC</th>
+                    <th>Margin Account LockedIn Vale QC</th>
+                    <th>Liquidation Price</th>
+                </tr>
+                <tr ng-repeat="position in ctrl.openPositions">
+                    <td><a ng-href="{{ctrl.blockExplorer}}address/{{position.traderAddress}}" target="_blank">{{ position.traderAddress }}</a></td>
+                    <td>{{ position.marginBalanceCC.toFixed(6) }}</td>
+                    <td>{{ position.availableMarginCC.toFixed(6) }}</td>
+                    <td>{{ position.availableCashCC.toFixed(6) }}</td>
+                    <td>{{ position.marginAccountCashCC.toFixed(6) }}</td>
+                    <td>{{ position.marginAccountPositionBC.toFixed(6) }}</td>
+                    <td>{{ position.marginAccountLockedInValueQC.toFixed(6) }}</td>
+                    <td>{{ position.liquidationPrice.toFixed(2) }}</td>
+                </tr>
+        </div>
+    </div>
+    <div class="row"></div>
+
+    <div class="row">
+      <div class="col-12">
+        <br />
+        <br />
+        <table>
+            <tr><th colspan="5">Perpetual Overview</th></tr>
+          <tr>
+            <th>Mark Price</th>
+            <th>Total Open Positions</th>
+            <th>Total Longs</th>
+            <th>Total Shorts</th>
+            <th>Totals</th>
+          </tr>
+          <tr>
+            <td>{{ ctrl.positionsOverview.markPrice.toFixed(2) }}</td>
+            <td>{{ ctrl.openPositions.length }}</td>
+            <td>{{ ctrl.positionsOverview.totalLongs.toFixed(6) }}</td>
+            <td>{{ ctrl.positionsOverview.totalShorts.toFixed(6) }}</td>
+            <td>{{ ctrl.positionsOverview.totalOpenPositionsSize.toFixed(6) }}</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+
+  <!-- Optional JavaScript -->
+  <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+    integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+    crossorigin="anonymous"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+    integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+    crossorigin="anonymous"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.8.0/angular.min.js" integrity="sha512-jiG+LwJB0bmXdn4byKzWH6whPpnLy1pnGA/p3VCXFLk4IJ/Ftfcb22katPTapt35Q6kwrlnRheK6UPOIdJhYTA==" crossorigin="anonymous"></script>
+  <script src="main.js"></script>
+</body>
+
+</html>

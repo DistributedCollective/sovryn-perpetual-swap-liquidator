@@ -14,11 +14,14 @@ const { getSigningManagersConnectedToFastestNode, getNumTransactions } = walletU
 const { queryTraderState, queryAMMState, queryPerpParameters } = perpQueries;
 const { getMarkPrice } = perpUtils;
 
-//configured in the .env file
-const { MANAGER_ADDRESS, NODE_URLS, OWNER_ADDRESS, MAX_BLOCKS_BEFORE_RECONNECT, TELEGRAM_BOT_SECRET, TELEGRAM_CHANNEL_ID } = process.env;
+import dbCtrl from "./db";
+import monitor from "./monitor";
 
 //configured in the liquidator-ecosystem.config.js
-const { PERP_ID, PERP_NAME, IDX_ADDR_START, NUM_ADDRESSES } = process.env;
+const { MANAGER_ADDRESS, NODE_URLS, OWNER_ADDRESS, PERP_ID, PERP_NAME, IDX_ADDR_START, NUM_ADDRESSES, DB_NAME } = process.env;
+
+//configured in the .env file
+const { TELEGRAM_BOT_SECRET, TELEGRAM_CHANNEL_ID } = process.env;
 if (!PERP_ID) {
     console.error("PERP_ID is not set in the .env file");
     process.exit(1);
@@ -51,14 +54,68 @@ let ammState: AMMState | null;
 let perpsParams: PerpParameters | null;
 
 let notifier = getTelegramNotifier(TELEGRAM_BOT_SECRET, TELEGRAM_CHANNEL_ID);
+
 let blockProcessingErrors = 0;
+
+module.exports.start = async function (io) {
+    let [driverManager, ...signingManagers] = await getConnectedAndFundedSigners(IDX_ADDR_START, NUM_ADDRESSES);
+    await Promise.all([startLiquidator(driverManager, signingManagers), runMonitoring(io, driverManager, signingManagers)]);
+};
+
+async function startLiquidator(driverManager, signingManagers) {
+    try {
+        tradersPositions = await initializeLiquidator(signingManagers);
+
+        if (process.env.HEARTBEAT_SHOULD_RESTART_URL) {
+            //only check if dead after 1 minute after the script started, so it has enough time to send some heartbeats
+            setTimeout(() => {
+                console.log(`Starting to check if shouldRestart....`);
+                setInterval(() => shouldRestart(runId, `LIQ_${PERP_NAME || "undefined"}_BLOCK_PROCESSED`), 5_000);
+            }, 60_000);
+        } else {
+            console.warn("Env var HEARTBEAT_SHOULD_RESTART_URL is not set, so if the nodes are pausing the connection, can not restart automatically.");
+        }
+
+        try {
+            let res = await runLiquidator(driverManager, signingManagers);
+        } catch (error) {
+            console.log(`Error in while(true):`, error);
+        }
+
+        //pm2 will restart the script if it crashes
+        process.exit(1);
+    } catch (error) {
+        console.log(`General error while liquidating users, exiting process`, error);
+        await notifier.sendMessage(`General error while liquidating users: ${(error as any).message}. Exiting.`);
+        process.exit(1);
+    }
+}
+
+async function runMonitoring(io, driverManager, signingManagers) {
+    try {
+        await dbCtrl.initDb(DB_NAME);
+        monitor.start(driverManager, signingManagers);
+        io.on("connection", (socket) => {
+            socket.on("getAccountsInfo", async (cb) => {
+                monitor.getAccountsInfo(cb);
+            });
+            socket.on("getSignals", async (cb) => monitor.getSignals(cb));
+            socket.on("getLatestLiquidations", async (cb) => monitor.getLatestLiquidations(cb));
+            socket.on("getOpenPositions", async (cb) => monitor.getOpenPositions(ammState, perpsParams, tradersPositions, cb));
+            socket.on("getNetworkData", async (cb) => monitor.getNetworkData(cb));
+            socket.on("getLast24HTotals", async (cb) => monitor.getTotals(cb, true));
+        });
+    } catch (error) {
+        console.log(`Error in runMonitoring:`, error);
+    }
+}
+
 /**
  * Run the liquidation script for a period of maxBlocks
  * @param signingManager a signing manager contract instance
- * @param maxBlocks the number of blocks after the current readManager gets re-connected
  * @returns
  */
-function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<void> {
+function runLiquidator<T>(driverManager, signingManagers): Promise<void> {
     return new Promise((resolve, reject) => {
         driverManager.once("error", (e) => {
             console.log(`driverManager.once('error') triggered`, e);
@@ -136,9 +193,6 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
                     duration: timeEnd - timeStart,
                 });
                 blockProcessingErrors = 0;
-                if (numBlocks >= maxBlocks) {
-                    return resolve();
-                }
                 blockProcessing = 0;
             } catch (e) {
                 console.log(`Error in block processing callback:`, e);
@@ -183,44 +237,6 @@ function runForNumBlocks<T>(driverManager, signingManagers, maxBlocks): Promise<
         });
     });
 }
-
-(async function main() {
-    try {
-        let [driverManager, ...signingManagers] = await getConnectedAndFundedSigners(IDX_ADDR_START, NUM_ADDRESSES);
-
-        tradersPositions = await initializeLiquidator(signingManagers);
-
-        if (process.env.HEARTBEAT_SHOULD_RESTART_URL) {
-            //only check if dead after 1 minute after the script started, so it has enough time to send some heartbeats
-            setTimeout(() => {
-                console.log(`Starting to check if shouldRestart....`);
-                setInterval(() => shouldRestart(runId, `LIQ_${PERP_NAME || "undefined"}_BLOCK_PROCESSED`), 5_000);
-            }, 60_000);
-        } else {
-            console.warn("Env var HEARTBEAT_SHOULD_RESTART_URL is not set, so if the nodes are pausing the connection, can not restart automatically.");
-        }
-
-        while (true) {
-            try {
-                let res = await runForNumBlocks(driverManager, signingManagers, MAX_BLOCKS_BEFORE_RECONNECT);
-                console.log(`Ran for ${MAX_BLOCKS_BEFORE_RECONNECT}`);
-            } catch (error) {
-                console.log(`Error in while(true):`, error);
-                // await notifier.sendMessage(`Error in while(true): ${(error as any).message}`);
-            }
-
-            //remove event listeners and reconnect
-            driverManager.provider.removeAllListeners();
-            driverManager.removeAllListeners();
-
-            [driverManager, ...signingManagers] = await getConnectedAndFundedSigners(IDX_ADDR_START, NUM_ADDRESSES);
-        }
-    } catch (error) {
-        console.log(`General error while liquidating users, exiting process`, error);
-        await notifier.sendMessage(`General error while liquidating users: ${(error as any).message}. Exiting.`);
-        process.exit(1);
-    }
-})();
 
 async function checkFundingHealth(accounts) {
     //TODO: do this in batches?
