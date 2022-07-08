@@ -2,7 +2,7 @@ module.exports = {
   apps: [
   {
     name: "mainnet-liquidator-btcusd",
-    script: "ts-node src/main.ts",
+    script: "ts-node start.ts",
     max_memory_restart: "1000M",
     log_date_format: "YYYY-MM-DD HH:mm Z",
     env: {
