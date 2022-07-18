@@ -63,6 +63,7 @@
         <table>
           <tr>
             <th>Trader</th>
+            <th>Liquidator</th>
             <th>Amount Liquidated BC</th>
             <th>Liquidation Price</th>
             <th>New Position Size BC</th>
@@ -70,6 +71,7 @@
           </tr>
           <tr ng-repeat="liquidation in ctrl.latestLiquidations">
             <td><a ng-href="{{ctrl.blockExplorer}}address/{{liquidation.trader}}" target="_blank">{{ liquidation.trader }}</a></td>
+            <td><a ng-href="{{ctrl.blockExplorer}}address/{{liquidation.liquidator}}" target="_blank">{{ liquidation.liquidator }}</a></td>
             <td>{{ liquidation.amountLiquidatedBC.toFixed(6) }}</td>
             <td>{{ liquidation.liquidationPrice.toFixed(2) }}</td>
             <td>{{ liquidation.newPositionSizeBC.toFixed(6) }}</td>

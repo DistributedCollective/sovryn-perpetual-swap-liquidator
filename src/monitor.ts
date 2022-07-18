@@ -80,7 +80,7 @@ class MonitorController {
             const graphqlQuery = {
                 query: `{
                 perpetuals(where:{id: "${PERP_ID}"}, subgraphError: allow){
-                    liquidates(first: 5, orderBy: blockTimestamp, orderDirection: desc){
+                    liquidates(first: 10, orderBy: blockTimestamp, orderDirection: desc){
                       trader{
                       id
                     }
@@ -89,6 +89,7 @@ class MonitorController {
                     newPositionSizeBC
                     transaction{
                       id
+                      from
                     }
                   }
                 }
@@ -106,6 +107,7 @@ class MonitorController {
             for (const l of response?.data?.data?.perpetuals[0]?.liquidates || []) {
                 liquidations.push({
                     trader: l.trader.id,
+                    liquidator: l.transaction.from,
                     amountLiquidatedBC: ABK64x64ToFloat(BN.from(l.amountLiquidatedBC || "0")),
                     liquidationPrice: ABK64x64ToFloat(BN.from(l.liquidationPrice || "0")),
                     newPositionSizeBC: ABK64x64ToFloat(BN.from(l.newPositionSizeBC || "0")),

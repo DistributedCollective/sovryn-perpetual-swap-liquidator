@@ -18,7 +18,7 @@ import dbCtrl from "./db";
 import monitor from "./monitor";
 
 //configured in the liquidator-ecosystem.config.js
-const { MANAGER_ADDRESS, NODE_URLS, OWNER_ADDRESS, PERP_ID, PERP_NAME, IDX_ADDR_START, NUM_ADDRESSES, DB_NAME } = process.env;
+const { MANAGER_ADDRESS, NODE_URLS, OWNER_ADDRESS, PERP_ID, PERP_NAME, IDX_ADDR_START, NUM_ADDRESSES, DB_NAME, BLOCK_EXPLORER } = process.env;
 
 //configured in the .env file
 const { TELEGRAM_BOT_SECRET, TELEGRAM_CHANNEL_ID } = process.env;
@@ -172,9 +172,7 @@ function runLiquidator<T>(driverManager, signingManagers): Promise<void> {
                     if (Object.keys(liquidationResult || {}).length) {
                         console.log(`Liquidations in perpetual ${PERP_ID}: `, JSON.stringify(liquidationResult, null, 2));
                         for (const traderId in liquidationResult) {
-                            let liquidationMessage = `[LIQUIDATION in ${PERP_NAME}] [${traderId}](https://${
-                                process.env.TESTNET ? "testnet." : ""
-                            }bscscan.com/tx/${liquidationResult?.[traderId]?.result?.hash}) - ${liquidationResult?.[traderId]?.status}`;
+                            let liquidationMessage = `[LIQUIDATION in ${PERP_NAME}] [${traderId}](${BLOCK_EXPLORER}/tx/${liquidationResult?.[traderId]?.result?.hash}) - ${liquidationResult?.[traderId]?.status}`;
                             liquidationMessage = liquidationMessage.replace(/\-/g, "\\-");
                             console.log(`liquidationMessage: `, liquidationMessage);
                             await notifier.sendMessage(liquidationMessage, { parse_mode: "MarkdownV2" });
