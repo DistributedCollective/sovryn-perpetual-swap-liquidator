@@ -1,6 +1,6 @@
 module.exports = {
   apps: [{
-    name: "testnet-liquidator-btcusd",
+    name: "testnet-liquidator-btcusd-v2",
     script: "ts-node start.ts",
     max_memory_restart: "1000M",
     log_date_format: "YYYY-MM-DD HH:mm Z",
@@ -26,7 +26,7 @@ module.exports = {
     }
   },
   {
-    name: "testnet-liquidator-bnbusd",
+    name: "testnet-liquidator-bnbusd-v2",
     script: "ts-node start.ts",
     max_memory_restart: "1000M",
     log_date_format: "YYYY-MM-DD HH:mm Z",
