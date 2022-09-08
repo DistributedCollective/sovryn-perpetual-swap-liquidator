@@ -18,7 +18,8 @@ import dbCtrl from "./db";
 import monitor from "./monitor";
 
 //configured in the liquidator-ecosystem.config.js
-const { MANAGER_ADDRESS, NODE_URLS, OWNER_ADDRESS, PERP_ID, PERP_NAME, IDX_ADDR_START, NUM_ADDRESSES, DB_NAME, BLOCK_EXPLORER } = process.env;
+const { MANAGER_ADDRESS, NODE_URLS, OWNER_ADDRESS, PERP_ID, PERP_NAME, IDX_ADDR_START, NUM_ADDRESSES, DB_NAME, BLOCK_EXPLORER, INACTIVITY_TIMEOUT } =
+    process.env;
 
 //configured in the .env file
 const { TELEGRAM_BOT_SECRET, TELEGRAM_CHANNEL_ID } = process.env;
@@ -41,6 +42,8 @@ if (!MNEMONIC) {
 
 const runId = uuidv4();
 console.log(`runId: ${runId}`);
+let lastBlockProcessedAt = Math.floor(new Date().getTime() / 1000);
+
 
 /**
  * {
@@ -76,6 +79,8 @@ async function startLiquidator(driverManager, signingManagers) {
         } else {
             console.warn("Env var HEARTBEAT_SHOULD_RESTART_URL is not set, so if the nodes are pausing the connection, can not restart automatically.");
         }
+
+        setInterval(() => localShouldRestart(), 10_000);
 
         try {
             let res = await runLiquidator(driverManager, signingManagers);
@@ -153,6 +158,7 @@ function runLiquidator<T>(driverManager, signingManagers): Promise<void> {
                 blockProcessing = blockNumber;
                 let timeStart = new Date().getTime();
                 let numTraders = 0;
+                lastBlockProcessedAt = Math.floor(new Date().getTime() / 1000);
                 numBlocks++;
                 numTraders += Object.keys(tradersPositions).length || 0;
 
@@ -391,6 +397,18 @@ async function sendHeartBeat(code, payload) {
         }
     } catch (error) {
         console.warn(`Error sending heartbeat:`, error);
+    }
+}
+
+function localShouldRestart() {
+    const now = Math.floor(new Date().getTime() / 1000);
+    const inactivityTimeout = parseInt(INACTIVITY_TIMEOUT || "0") || 120;
+
+    const timeSinceLastBlockProcessed = now - lastBlockProcessedAt;
+    console.log(`Time since last block processed: ${timeSinceLastBlockProcessed}`);
+    if (timeSinceLastBlockProcessed > inactivityTimeout) {
+        console.log(`Time since last block processed is ${timeSinceLastBlockProcessed}. INACTIVITY_TIMEOUT set to ${inactivityTimeout}. Exiting...`);
+        process.exit(1);
     }
 }
 
