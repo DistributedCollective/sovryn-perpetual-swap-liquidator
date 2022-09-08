@@ -80,7 +80,7 @@ async function startLiquidator(driverManager, signingManagers) {
             console.warn("Env var HEARTBEAT_SHOULD_RESTART_URL is not set, so if the nodes are pausing the connection, can not restart automatically.");
         }
 
-        setInterval(() => localShouldRestart(), 10_000);
+        setInterval(() => localShouldRestart(), 50_000);
 
         try {
             let res = await runLiquidator(driverManager, signingManagers);
@@ -403,8 +403,8 @@ async function sendHeartBeat(code, payload) {
 function localShouldRestart() {
     const now = Math.floor(new Date().getTime() / 1000);
     const inactivityTimeout = parseInt(INACTIVITY_TIMEOUT || "0") || 120;
-
     const timeSinceLastBlockProcessed = now - lastBlockProcessedAt;
+
     console.log(`Time since last block processed: ${timeSinceLastBlockProcessed}`);
     if (timeSinceLastBlockProcessed > inactivityTimeout) {
         console.log(`Time since last block processed is ${timeSinceLastBlockProcessed}. INACTIVITY_TIMEOUT set to ${inactivityTimeout}. Exiting...`);
